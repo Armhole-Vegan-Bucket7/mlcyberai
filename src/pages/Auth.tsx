@@ -26,7 +26,6 @@ const loginSchema = z.object({
 
 // Register form schema
 const registerSchema = z.object({
-  fullName: z.string().min(3, { message: "Name must be at least 3 characters" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
@@ -54,7 +53,6 @@ const Auth: React.FC = () => {
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -73,7 +71,7 @@ const Auth: React.FC = () => {
   const handleRegisterSubmit = async (values: RegisterFormValues) => {
     setFormError(null);
     try {
-      await signUp(values.email, values.password, values.fullName);
+      await signUp(values.email, values.password);
       // Switch to login mode after successful registration
       setMode("login");
     } catch (error: any) {
@@ -151,22 +149,6 @@ const Auth: React.FC = () => {
             ) : (
               <Form {...registerForm}>
                 <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
-                  <FormField
-                    control={registerForm.control}
-                    name="fullName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="John Doe"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                   <FormField
                     control={registerForm.control}
                     name="email"
