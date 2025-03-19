@@ -3,6 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import UserMenu from "@/components/UserMenu";
+import TenantSelector from "@/components/dashboard/TenantSelector";
 
 type TopBarProps = {
   setSidebarOpen: (open: boolean) => void;
@@ -26,6 +27,7 @@ const TopBar = ({ setSidebarOpen }: TopBarProps) => {
           <h1 className="text-lg font-semibold">Cybersecurity Unified Metrics Dashboard</h1>
         </div>
         <div className="flex items-center gap-x-4 lg:gap-x-6">
+          <TenantSelector />
           <UserMenu />
         </div>
       </div>

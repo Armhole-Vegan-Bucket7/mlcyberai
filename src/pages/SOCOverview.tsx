@@ -88,14 +88,13 @@ const SOCOverview = () => {
           <Progress 
             value={securityPostureScore} 
             max={100} 
-            className="h-2.5"
-            indicatorClassName={
+            className={`h-2.5 ${
               securityPostureScore >= 80 
                 ? "bg-cyber-green" 
                 : securityPostureScore >= 70 
                   ? "bg-cyber-yellow" 
                   : "bg-cyber-orange"
-            }
+            }`}
           />
         </div>
         

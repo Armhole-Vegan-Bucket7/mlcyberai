@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Check, ChevronDown, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTenantContext } from '@/contexts/TenantContext';
@@ -13,6 +13,7 @@ export const TENANTS = [
 export function TenantSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const { selectedTenant, setSelectedTenant } = useTenantContext();
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   const toggleDropdown = () => setIsOpen(!isOpen);
   
@@ -21,8 +22,22 @@ export function TenantSelector() {
     setIsOpen(false);
   };
   
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
         className={cn(
@@ -39,14 +54,16 @@ export function TenantSelector() {
       </button>
       
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-64 glass rounded-lg shadow-lg py-1 z-20 animate-fade-in">
+        <div 
+          className="absolute top-full left-0 mt-1 w-64 bg-background border border-border rounded-lg shadow-lg py-1 z-50"
+        >
           {TENANTS.map((tenant) => (
             <button
               key={tenant.id}
               onClick={() => selectTenant(tenant)}
               className={cn(
                 "flex items-center gap-2 w-full px-3 py-2 text-left text-sm",
-                "hover:bg-cyber-blue/5 transition-colors"
+                "hover:bg-accent hover:text-accent-foreground transition-colors"
               )}
             >
               <span className="w-5">
