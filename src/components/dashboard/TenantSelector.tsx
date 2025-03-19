@@ -1,18 +1,18 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, ChevronDown, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTenantContext } from '@/contexts/TenantContext';
 
-const TENANTS = [
+export const TENANTS = [
   { id: '1', name: 'Microland MSSP' },
-  { id: '2', name: 'Acme Corporation' },
-  { id: '3', name: 'Globex Industries' },
-  { id: '4', name: 'Initech Systems' },
+  { id: '2', name: 'RSM' },
+  { id: '3', name: 'Indorama' },
 ];
 
 export function TenantSelector() {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedTenant, setSelectedTenant] = useState(TENANTS[0]);
+  const { selectedTenant, setSelectedTenant } = useTenantContext();
   
   const toggleDropdown = () => setIsOpen(!isOpen);
   

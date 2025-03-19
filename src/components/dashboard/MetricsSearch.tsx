@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTenantContext } from '@/contexts/TenantContext';
 
 interface MetricsSearchProps {
   className?: string;
@@ -15,6 +16,7 @@ const MetricsSearch: React.FC<MetricsSearchProps> = ({ className }) => {
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { selectedTenant } = useTenantContext();
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +27,11 @@ const MetricsSearch: React.FC<MetricsSearchProps> = ({ className }) => {
 
     try {
       const { data, error } = await supabase.functions.invoke('search-metrics', {
-        body: { query: query },
+        body: { 
+          query: query,
+          tenantId: selectedTenant.id,
+          tenantName: selectedTenant.name
+        },
       });
 
       if (error) throw error;
@@ -51,7 +57,7 @@ const MetricsSearch: React.FC<MetricsSearchProps> = ({ className }) => {
       <div className="mt-2 space-y-4">
         <form onSubmit={handleSearch} className="flex gap-2">
           <Input
-            placeholder="Ask about your security metrics..."
+            placeholder={`Ask about ${selectedTenant.name}'s security metrics...`}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1"
