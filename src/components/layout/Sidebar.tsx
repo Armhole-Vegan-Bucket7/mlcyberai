@@ -79,7 +79,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       <div className={cn("flex flex-col h-full p-4", !isMobile && "pt-8")}>
         {!isMobile && (
           <div className="mb-8 px-4">
-            <h1 className="font-semibold text-xl">CyberMetrics</h1>
+            <h1 className="font-semibold text-xl">Microland Cyber Data AI Engine</h1>
             <p className="text-xs text-cyber-gray-500 mt-1">Unified Dashboard</p>
           </div>
         )}

@@ -24,7 +24,7 @@ const TopBar = ({ setSidebarOpen }: TopBarProps) => {
 
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 justify-between">
         <div className="flex items-center">
-          <h1 className="text-lg font-semibold">Cybersecurity Unified Metrics Dashboard</h1>
+          <h1 className="text-lg font-semibold">Microland Cyber Data AI Engine</h1>
         </div>
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           <TenantSelector />
