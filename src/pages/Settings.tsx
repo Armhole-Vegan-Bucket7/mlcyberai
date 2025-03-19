@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Bell, Moon, Shield, Users, Eye, Lock, ArrowRight, Info } from 'lucide-react';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { toast } from '@/components/ui/use-toast';
+import PlatformIntegrations from '@/components/settings/PlatformIntegrations';
 
 const Settings = () => {
   const { selectedTenant } = useTenantContext();
@@ -53,7 +53,8 @@ const Settings = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="integrations">API Integration</TabsTrigger>
+          <TabsTrigger value="integrations">Platform Integrations</TabsTrigger>
+          <TabsTrigger value="api">API Access</TabsTrigger>
         </TabsList>
 
         <TabsContent value="preferences" className="space-y-4">
@@ -182,6 +183,10 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="integrations" className="space-y-4">
+          <PlatformIntegrations />
+        </TabsContent>
+
+        <TabsContent value="api" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
