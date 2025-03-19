@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -26,7 +25,7 @@ const loginSchema = z.object({
 
 // Register form schema
 const registerSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
+  email: z.string(),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -72,14 +71,12 @@ const Auth: React.FC = () => {
     setFormError(null);
     try {
       await signUp(values.email, values.password);
-      // Switch to login mode after successful registration
       setMode("login");
     } catch (error: any) {
       setFormError(error.message || "Failed to register");
     }
   };
 
-  // Redirect if already logged in
   if (user) {
     return <Navigate to="/" replace />;
   }
