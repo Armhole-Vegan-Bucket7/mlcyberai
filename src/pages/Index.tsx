@@ -1,3 +1,4 @@
+
 import React from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import MetricCard from '@/components/dashboard/MetricCard';
@@ -81,7 +82,7 @@ const Index = () => {
     <PageLayout>
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
         <div className="page-transition">
-          <h1 className="text-3xl font-bold">Cybersecurity Dashboard</h1>
+          <h1 className="text-3xl font-bold">CyberPosture</h1>
           <p className="text-cyber-gray-500 mt-1">
             Overview of your security posture across all systems
           </p>

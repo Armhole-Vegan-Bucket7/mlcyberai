@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  LayoutDashboard,
+  ShieldCheck,
   Shield,
   AlertCircle,
   Bug,
@@ -50,7 +50,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   };
 
   const routes = [
-    { icon: <LayoutDashboard size={20} />, text: "Dashboard", to: "/" },
+    { icon: <ShieldCheck size={20} />, text: "CyberPosture", to: "/" },
     { icon: <Shield size={20} />, text: "SOC Overview", to: "/soc" },
     { icon: <AlertCircle size={20} />, text: "Incidents", to: "/incidents" },
     { icon: <Bug size={20} />, text: "Vulnerabilities", to: "/vulnerabilities" },
