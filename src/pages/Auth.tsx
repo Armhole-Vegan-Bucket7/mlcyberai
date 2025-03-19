@@ -19,7 +19,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-// Import icons
+// Import Provider type and icons
+import { Provider } from "@supabase/supabase-js";
 import { Icons } from "@/components/icons";
 
 // Login form schema
@@ -85,7 +86,7 @@ const Auth: React.FC = () => {
     }
   };
 
-  const handleOAuthSignIn = async (provider: "google" | "microsoft") => {
+  const handleOAuthSignIn = async (provider: Provider) => {
     setFormError(null);
     try {
       await signInWithOAuth(provider);
@@ -126,7 +127,7 @@ const Auth: React.FC = () => {
                 type="button"
                 variant="outline"
                 className="w-full"
-                onClick={() => handleOAuthSignIn("google")}
+                onClick={() => handleOAuthSignIn("google" as Provider)}
               >
                 <Icons.google className="mr-2 h-4 w-4" />
                 Continue with Google
@@ -135,7 +136,7 @@ const Auth: React.FC = () => {
                 type="button"
                 variant="outline"
                 className="w-full"
-                onClick={() => handleOAuthSignIn("microsoft")}
+                onClick={() => handleOAuthSignIn("microsoft" as Provider)}
               >
                 <Icons.microsoft className="mr-2 h-4 w-4" />
                 Continue with Microsoft
