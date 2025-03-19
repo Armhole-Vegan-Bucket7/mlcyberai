@@ -1,7 +1,6 @@
+
 import React, { useState } from "react";
-import { z } from "zod";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -17,24 +16,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-// Login form schema
-const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-});
+interface LoginFormValues {
+  email: string;
+  password: string;
+}
 
-// Register form schema
-const registerSchema = z.object({
-  email: z.string(),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-type RegisterFormValues = z.infer<typeof registerSchema>;
+interface RegisterFormValues {
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
 const Auth: React.FC = () => {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -42,7 +33,6 @@ const Auth: React.FC = () => {
   const { user, signIn, signUp } = useAuth();
 
   const loginForm = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
@@ -50,7 +40,6 @@ const Auth: React.FC = () => {
   });
 
   const registerForm = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
       password: "",
@@ -69,6 +58,13 @@ const Auth: React.FC = () => {
 
   const handleRegisterSubmit = async (values: RegisterFormValues) => {
     setFormError(null);
+    
+    // Client-side password match validation
+    if (values.password !== values.confirmPassword) {
+      setFormError("Passwords do not match");
+      return;
+    }
+    
     try {
       await signUp(values.email, values.password);
       setMode("login");
@@ -92,7 +88,7 @@ const Auth: React.FC = () => {
             <CardDescription>
               {mode === "login"
                 ? "Enter your credentials to access your account"
-                : "Fill in the details to create your account"}
+                : "Create a new account"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -144,69 +140,53 @@ const Auth: React.FC = () => {
                 </form>
               </Form>
             ) : (
-              <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
-                  <FormField
-                    control={registerForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="your@email.com" 
-                            type="email"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+              <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    Email
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    {...registerForm.register("email")}
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="password"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    {...registerForm.register("password")}
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="password"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  <p className="text-xs text-gray-500">Password must be at least 6 characters</p>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                    Confirm Password
+                  </label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    {...registerForm.register("confirmPassword")}
                   />
-                  <Button type="submit" className="w-full" disabled={registerForm.formState.isSubmitting}>
-                    {registerForm.formState.isSubmitting ? "Creating Account..." : "Create Account"}
-                  </Button>
-                </form>
-              </Form>
+                </div>
+                <Button type="submit" className="w-full" disabled={registerForm.formState.isSubmitting}>
+                  {registerForm.formState.isSubmitting ? "Creating Account..." : "Create Account"}
+                </Button>
+              </form>
             )}
           </CardContent>
           <CardFooter>
             <Button
               variant="link"
               className="w-full"
-              onClick={() => setMode(mode === "login" ? "register" : "login")}
+              onClick={() => {
+                setFormError(null);
+                setMode(mode === "login" ? "register" : "login");
+              }}
             >
               {mode === "login" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
             </Button>

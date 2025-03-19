@@ -4,14 +4,14 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type AuthContextType = {
+interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-};
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -22,6 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -30,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
+    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -47,14 +49,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) throw error;
+      
       toast({
         title: "Success",
-        description: "You have successfully signed in",
+        description: "Signed in successfully",
       });
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "An error occurred during sign in",
+        description: error.message || "Failed to sign in",
         variant: "destructive",
       });
       throw error;
@@ -65,18 +68,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signUp({
         email,
-        password
+        password,
       });
 
       if (error) throw error;
+      
       toast({
         title: "Success",
-        description: "Registration successful! Please check your email for confirmation.",
+        description: "Account created successfully! Please check your email.",
       });
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "An error occurred during registration",
+        description: error.message || "Failed to create account",
         variant: "destructive",
       });
       throw error;
@@ -87,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
       toast({
         title: "Signed out",
         description: "You have been signed out successfully",
@@ -94,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "An error occurred during sign out",
+        description: error.message || "Failed to sign out",
         variant: "destructive",
       });
     }
