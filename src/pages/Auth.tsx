@@ -118,7 +118,7 @@ const Auth: React.FC = () => {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="your@email.com" {...field} />
+                          <Input placeholder="your@email.com" type="email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -165,7 +165,7 @@ const Auth: React.FC = () => {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="your@email.com" {...field} />
+                          <Input placeholder="your@email.com" type="email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
