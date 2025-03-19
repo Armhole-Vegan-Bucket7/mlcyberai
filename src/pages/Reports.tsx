@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTenantContext } from '@/contexts/TenantContext';
 import PageLayout from '@/components/layout/PageLayout';
 import { Badge } from '@/components/ui/badge';
@@ -25,27 +25,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-// Define types for reports
-type ReportStatus = 'ready' | 'scheduled' | 'generating';
-type ReportCategory = 'security' | 'compliance' | 'vulnerability' | 'incident' | 'audit';
-
-interface Report {
-  id: string;
-  name: string;
-  description: string;
-  category: ReportCategory;
-  status: ReportStatus;
-  lastGenerated?: string;
-  nextScheduled?: string;
-  format: 'PDF' | 'XLSX' | 'JSON' | 'HTML';
-}
+import { Report, ReportStatus, ReportCategory } from '@/types/report';
+import { downloadReport } from '@/utils/ReportUtils';
+import GenerateReportDialog from '@/components/reports/GenerateReportDialog';
+import MicrolandLogo from '@/components/reports/MicrolandLogo';
+import { toast } from '@/hooks/use-toast';
 
 const Reports = () => {
   const { selectedTenant } = useTenantContext();
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+  const [reports, setReports] = useState<Report[]>(() => generateReports());
   
   // Generate tenant-specific reports
-  const generateReports = (): Report[] => {
+  function generateReports(): Report[] {
     const baseReports: Report[] = [
       {
         id: `${selectedTenant.id}-REP-001`,
@@ -157,7 +149,43 @@ const Reports = () => {
     return baseReports;
   };
   
-  const reports = generateReports();
+  // Handle report download
+  const handleDownloadReport = (report: Report) => {
+    downloadReport(report);
+  };
+  
+  // Handle email reports
+  const handleEmailReports = () => {
+    toast({
+      title: "Reports Emailed",
+      description: "Selected reports have been emailed successfully.",
+      variant: "default",
+    });
+  };
+  
+  // Handle print list
+  const handlePrintList = () => {
+    window.print();
+    toast({
+      title: "Print Requested",
+      description: "Report list sent to printer.",
+      variant: "default",
+    });
+  };
+  
+  // Handle new report generation
+  const handleReportGenerated = (newReport: Report) => {
+    setReports(prevReports => [newReport, ...prevReports]);
+  };
+  
+  // View report
+  const handleViewReport = (report: Report) => {
+    toast({
+      title: "Viewing Report",
+      description: `Opening ${report.name} for viewing.`,
+      variant: "default",
+    });
+  };
   
   // Utilities for rendering
   const getCategoryIcon = (category: ReportCategory) => {
@@ -215,7 +243,10 @@ const Reports = () => {
     <PageLayout>
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
         <div className="page-transition">
-          <h1 className="text-3xl font-bold">Security Reports</h1>
+          <div className="flex items-center gap-3">
+            <MicrolandLogo />
+            <h1 className="text-3xl font-bold">Security Reports</h1>
+          </div>
           <p className="text-cyber-gray-500 mt-1">
             Access and manage your security reports and analytics
           </p>
@@ -227,7 +258,11 @@ const Reports = () => {
             <span>Last 90 days</span>
           </div>
           
-          <Button size="sm" className="flex items-center gap-2">
+          <Button 
+            size="sm" 
+            className="flex items-center gap-2"
+            onClick={() => setShowGenerateDialog(true)}
+          >
             <FileBarChart className="w-4 h-4" />
             <span>Generate New Report</span>
           </Button>
@@ -240,6 +275,7 @@ const Reports = () => {
           <div className="flex items-center gap-2 mb-2 text-cyber-blue">
             <ShieldCheck className="w-5 h-5" />
             <h3 className="font-semibold">Security</h3>
+            <MicrolandLogo className="h-4 ml-auto" />
           </div>
           <p className="text-sm text-cyber-gray-500">General security posture and metrics</p>
           <div className="mt-3 text-2xl font-bold">
@@ -251,6 +287,7 @@ const Reports = () => {
           <div className="flex items-center gap-2 mb-2 text-cyber-purple">
             <FileText className="w-5 h-5" />
             <h3 className="font-semibold">Compliance</h3>
+            <MicrolandLogo className="h-4 ml-auto" />
           </div>
           <p className="text-sm text-cyber-gray-500">Regulatory and policy compliance</p>
           <div className="mt-3 text-2xl font-bold">
@@ -262,6 +299,7 @@ const Reports = () => {
           <div className="flex items-center gap-2 mb-2 text-cyber-orange">
             <Layers className="w-5 h-5" />
             <h3 className="font-semibold">Vulnerabilities</h3>
+            <MicrolandLogo className="h-4 ml-auto" />
           </div>
           <p className="text-sm text-cyber-gray-500">Vulnerability assessments and scans</p>
           <div className="mt-3 text-2xl font-bold">
@@ -273,6 +311,7 @@ const Reports = () => {
           <div className="flex items-center gap-2 mb-2 text-cyber-red">
             <Globe className="w-5 h-5" />
             <h3 className="font-semibold">Incidents</h3>
+            <MicrolandLogo className="h-4 ml-auto" />
           </div>
           <p className="text-sm text-cyber-gray-500">Security incident analysis</p>
           <div className="mt-3 text-2xl font-bold">
@@ -284,6 +323,7 @@ const Reports = () => {
           <div className="flex items-center gap-2 mb-2 text-cyber-green">
             <Users className="w-5 h-5" />
             <h3 className="font-semibold">Audits</h3>
+            <MicrolandLogo className="h-4 ml-auto" />
           </div>
           <p className="text-sm text-cyber-gray-500">Access and activity audits</p>
           <div className="mt-3 text-2xl font-bold">
@@ -295,13 +335,26 @@ const Reports = () => {
       {/* Reports Table */}
       <div className="glass rounded-xl p-6 animate-fade-in">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Available Reports</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold">Available Reports</h2>
+            <MicrolandLogo className="h-5" />
+          </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              onClick={handlePrintList}
+            >
               <Printer className="w-4 h-4" />
               <span>Print List</span>
             </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              onClick={handleEmailReports}
+            >
               <Mail className="w-4 h-4" />
               <span>Email Reports</span>
             </Button>
@@ -370,12 +423,23 @@ const Reports = () => {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       {report.status === 'ready' && (
-                        <Button variant="outline" size="sm" className="flex items-center gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center gap-1"
+                          onClick={() => handleDownloadReport(report)}
+                        >
                           <Download className="w-3 h-3" />
                           <span>Download</span>
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm">View</Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleViewReport(report)}
+                      >
+                        View
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -395,6 +459,13 @@ const Reports = () => {
           </div>
         </div>
       </div>
+      
+      {/* Generate Report Dialog */}
+      <GenerateReportDialog 
+        open={showGenerateDialog}
+        onOpenChange={setShowGenerateDialog}
+        onReportGenerated={handleReportGenerated}
+      />
     </PageLayout>
   );
 };
