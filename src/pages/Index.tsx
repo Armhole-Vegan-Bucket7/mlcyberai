@@ -32,44 +32,45 @@ const threatData = [
   { name: 'Identity', value: 13 },
 ];
 
+// Fixed the threatEvents data to use the correct type for eventType
 const threatEvents = [
   {
     id: '1',
     timestamp: '2023-12-01 15:32:47',
-    eventType: 'incident',
-    severity: 'critical',
+    eventType: 'incident' as const,
+    severity: 'critical' as const,
     source: 'Sentinel',
     details: 'Multiple failed login attempts detected from suspicious IP address'
   },
   {
     id: '2',
     timestamp: '2023-12-01 14:21:18',
-    eventType: 'alert',
-    severity: 'high',
+    eventType: 'alert' as const,
+    severity: 'high' as const,
     source: 'Crowdstrike',
     details: 'Potential data exfiltration activity detected on endpoint WKSTN-284'
   },
   {
     id: '3',
     timestamp: '2023-12-01 13:45:33',
-    eventType: 'detection',
-    severity: 'medium',
+    eventType: 'detection' as const,
+    severity: 'medium' as const,
     source: 'Defender',
     details: 'Suspicious PowerShell command execution on server SRV-DB01'
   },
   {
     id: '4',
     timestamp: '2023-12-01 11:29:05',
-    eventType: 'alert',
-    severity: 'medium',
+    eventType: 'alert' as const,
+    severity: 'medium' as const,
     source: 'Sentinel',
     details: 'Unusual access pattern to sensitive resources from user admin@company.com'
   },
   {
     id: '5',
     timestamp: '2023-12-01 09:53:22',
-    eventType: 'detection',
-    severity: 'low',
+    eventType: 'detection' as const,
+    severity: 'low' as const,
     source: 'Defender',
     details: 'New application installed on endpoint WKSTN-134'
   },
