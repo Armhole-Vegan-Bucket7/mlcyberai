@@ -14,9 +14,7 @@ import SOCOverview from "./pages/SOCOverview";
 import Incidents from "./pages/Incidents";
 import Vulnerabilities from "./pages/Vulnerabilities";
 import Reports from "./pages/Reports";
-
-// Create placeholder page for Settings only
-const Settings = () => <div className="p-8">Settings Page - Coming Soon</div>;
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 

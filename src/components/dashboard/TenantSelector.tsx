@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Check, ChevronDown, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTenantContext } from '@/contexts/TenantContext';
+import { toast } from '@/components/ui/use-toast';
 
 export const TENANTS = [
   { id: '1', name: 'Microland MSSP' },
@@ -18,7 +19,13 @@ export function TenantSelector() {
   const toggleDropdown = () => setIsOpen(!isOpen);
   
   const selectTenant = (tenant: typeof TENANTS[0]) => {
-    setSelectedTenant(tenant);
+    if (tenant.id !== selectedTenant.id) {
+      setSelectedTenant(tenant);
+      toast({
+        title: `Switched to ${tenant.name}`,
+        description: "Dashboard updated with tenant-specific data.",
+      });
+    }
     setIsOpen(false);
   };
   
@@ -44,6 +51,8 @@ export function TenantSelector() {
           "flex items-center gap-2 px-3 py-2 rounded-lg",
           "hover:bg-cyber-gray-100 dark:hover:bg-cyber-gray-800 transition-colors"
         )}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
       >
         <Building className="w-4 h-4 text-cyber-blue" />
         <span className="font-medium">{selectedTenant.name}</span>
@@ -55,7 +64,8 @@ export function TenantSelector() {
       
       {isOpen && (
         <div 
-          className="absolute top-full left-0 mt-1 w-64 bg-background border border-border rounded-lg shadow-lg py-1 z-50"
+          className="absolute top-full right-0 mt-1 w-64 bg-background border border-border rounded-lg shadow-lg py-1 z-50"
+          role="menu"
         >
           {TENANTS.map((tenant) => (
             <button
@@ -63,8 +73,10 @@ export function TenantSelector() {
               onClick={() => selectTenant(tenant)}
               className={cn(
                 "flex items-center gap-2 w-full px-3 py-2 text-left text-sm",
-                "hover:bg-accent hover:text-accent-foreground transition-colors"
+                "hover:bg-accent hover:text-accent-foreground transition-colors",
+                tenant.id === selectedTenant.id && "bg-accent/50"
               )}
+              role="menuitem"
             >
               <span className="w-5">
                 {tenant.id === selectedTenant.id && (

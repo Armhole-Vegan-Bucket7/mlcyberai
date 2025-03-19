@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { TENANTS } from '@/components/dashboard/TenantSelector';
 
 type Tenant = {
@@ -10,15 +10,22 @@ type Tenant = {
 type TenantContextType = {
   selectedTenant: Tenant;
   setSelectedTenant: (tenant: Tenant) => void;
+  refreshKey: number; // This will be used to force re-renders when tenant changes
 };
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export function TenantProvider({ children }: { children: ReactNode }) {
   const [selectedTenant, setSelectedTenant] = useState<Tenant>(TENANTS[0]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  
+  // Force a refresh when tenant changes
+  useEffect(() => {
+    setRefreshKey(prev => prev + 1);
+  }, [selectedTenant.id]);
 
   return (
-    <TenantContext.Provider value={{ selectedTenant, setSelectedTenant }}>
+    <TenantContext.Provider value={{ selectedTenant, setSelectedTenant, refreshKey }}>
       {children}
     </TenantContext.Provider>
   );
