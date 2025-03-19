@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import {
   Form,
   FormControl,
@@ -18,10 +17,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
-// Import Provider type and icons
-import { Provider } from "@supabase/supabase-js";
-import { Icons } from "@/components/icons";
 
 // Login form schema
 const loginSchema = z.object({
@@ -46,7 +41,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 const Auth: React.FC = () => {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [formError, setFormError] = useState<string | null>(null);
-  const { user, signIn, signUp, signInWithOAuth } = useAuth();
+  const { user, signIn, signUp } = useAuth();
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -86,15 +81,6 @@ const Auth: React.FC = () => {
     }
   };
 
-  const handleOAuthSignIn = async (provider: Provider) => {
-    setFormError(null);
-    try {
-      await signInWithOAuth(provider);
-    } catch (error: any) {
-      setFormError(error.message || `Failed to sign in with ${provider}`);
-    }
-  };
-
   // Redirect if already logged in
   if (user) {
     return <Navigate to="/" replace />;
@@ -121,42 +107,9 @@ const Auth: React.FC = () => {
               </Alert>
             )}
 
-            <div className="flex flex-col space-y-4">
-              {/* OAuth buttons */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => handleOAuthSignIn("google" as Provider)}
-              >
-                <Icons.google className="mr-2 h-4 w-4" />
-                Continue with Google
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => handleOAuthSignIn("microsoft" as Provider)}
-              >
-                <Icons.microsoft className="mr-2 h-4 w-4" />
-                Continue with Microsoft
-              </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-            </div>
-
             {mode === "login" ? (
               <Form {...loginForm}>
-                <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4 mt-4">
+                <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
                   <FormField
                     control={loginForm.control}
                     name="email"
@@ -191,13 +144,13 @@ const Auth: React.FC = () => {
                     )}
                   />
                   <Button type="submit" className="w-full" disabled={loginForm.formState.isSubmitting}>
-                    {loginForm.formState.isSubmitting ? "Signing in..." : "Sign In with Email"}
+                    {loginForm.formState.isSubmitting ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </Form>
             ) : (
               <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4 mt-4">
+                <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
                   <FormField
                     control={registerForm.control}
                     name="fullName"
@@ -264,7 +217,7 @@ const Auth: React.FC = () => {
                     )}
                   />
                   <Button type="submit" className="w-full" disabled={registerForm.formState.isSubmitting}>
-                    {registerForm.formState.isSubmitting ? "Creating Account..." : "Create Account with Email"}
+                    {registerForm.formState.isSubmitting ? "Creating Account..." : "Create Account"}
                   </Button>
                 </form>
               </Form>
