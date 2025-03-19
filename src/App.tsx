@@ -11,11 +11,11 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SOCOverview from "./pages/SOCOverview";
+import Incidents from "./pages/Incidents";
+import Vulnerabilities from "./pages/Vulnerabilities";
+import Reports from "./pages/Reports";
 
-// Create placeholder pages to complete routing
-const Incidents = () => <div className="p-8">Incidents Page - Coming Soon</div>;
-const Vulnerabilities = () => <div className="p-8">Vulnerabilities Page - Coming Soon</div>;
-const Reports = () => <div className="p-8">Reports Page - Coming Soon</div>;
+// Create placeholder page for Settings only
 const Settings = () => <div className="p-8">Settings Page - Coming Soon</div>;
 
 const queryClient = new QueryClient();

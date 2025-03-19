@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { getTenantMetrics, type Vulnerability, type SeverityLevel } from '@/data/tenantMetrics';
@@ -91,6 +90,7 @@ const Vulnerabilities = () => {
   };
 
   return (
+    
     <PageLayout>
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
         <div className="page-transition">
@@ -129,7 +129,11 @@ const Vulnerabilities = () => {
                 <div className="text-sm font-medium">Critical</div>
                 <div className="text-sm font-semibold">{criticalCount}</div>
               </div>
-              <Progress value={(criticalCount / totalVulnerabilities) * 100} className="h-2" indicatorClassName="bg-cyber-red" />
+              <Progress 
+                value={(criticalCount / totalVulnerabilities) * 100} 
+                className="h-2" 
+                indicatorClassName="bg-cyber-red" 
+              />
             </div>
             
             <div>
@@ -137,7 +141,11 @@ const Vulnerabilities = () => {
                 <div className="text-sm font-medium">High</div>
                 <div className="text-sm font-semibold">{highCount}</div>
               </div>
-              <Progress value={(highCount / totalVulnerabilities) * 100} className="h-2" indicatorClassName="bg-cyber-orange" />
+              <Progress 
+                value={(highCount / totalVulnerabilities) * 100} 
+                className="h-2" 
+                indicatorClassName="bg-cyber-orange" 
+              />
             </div>
             
             <div>
@@ -145,7 +153,11 @@ const Vulnerabilities = () => {
                 <div className="text-sm font-medium">Medium</div>
                 <div className="text-sm font-semibold">{mediumCount}</div>
               </div>
-              <Progress value={(mediumCount / totalVulnerabilities) * 100} className="h-2" indicatorClassName="bg-cyber-yellow" />
+              <Progress 
+                value={(mediumCount / totalVulnerabilities) * 100} 
+                className="h-2" 
+                indicatorClassName="bg-cyber-yellow" 
+              />
             </div>
             
             <div>
@@ -153,7 +165,11 @@ const Vulnerabilities = () => {
                 <div className="text-sm font-medium">Low</div>
                 <div className="text-sm font-semibold">{lowCount}</div>
               </div>
-              <Progress value={(lowCount / totalVulnerabilities) * 100} className="h-2" indicatorClassName="bg-cyber-blue" />
+              <Progress 
+                value={(lowCount / totalVulnerabilities) * 100} 
+                className="h-2" 
+                indicatorClassName="bg-cyber-blue" 
+              />
             </div>
           </div>
           
