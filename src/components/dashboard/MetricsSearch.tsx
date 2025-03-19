@@ -51,7 +51,7 @@ const MetricsSearch: React.FC<MetricsSearchProps> = ({ className }) => {
   return (
     <div className={`dashboard-card ${className}`}>
       <div className="dashboard-card-header">
-        <h3 className="dashboard-card-title">AI Metrics Search</h3>
+        <h3 className="dashboard-card-title">MLCyberLLM</h3>
       </div>
       
       <div className="mt-2 space-y-4">
