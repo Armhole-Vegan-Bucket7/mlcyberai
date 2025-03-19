@@ -1,10 +1,10 @@
-
 import React from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import MetricCard from '@/components/dashboard/MetricCard';
 import StatusCard from '@/components/dashboard/StatusCard';
 import ChartCard from '@/components/dashboard/ChartCard';
 import ThreatActivityTable from '@/components/dashboard/ThreatActivityTable';
+import MetricsSearch from '@/components/dashboard/MetricsSearch';
 import { Shield, AlertCircle, Bug, Clock, Users, Server } from 'lucide-react';
 
 // Mock data for dashboard
@@ -90,6 +90,10 @@ const Index = () => {
         <div className="glass rounded-full text-sm px-4 py-2 animate-slide-down">
           Last updated: <span className="font-medium">December 1, 2023 16:45 UTC</span>
         </div>
+      </div>
+      
+      <div className="mb-6">
+        <MetricsSearch />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
