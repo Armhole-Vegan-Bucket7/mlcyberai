@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { getTenantMetrics, type Vulnerability, type SeverityLevel } from '@/data/tenantMetrics';
 import PageLayout from '@/components/layout/PageLayout';
@@ -25,7 +26,8 @@ const Vulnerabilities = () => {
   const { selectedTenant } = useTenantContext();
   const { vulnerabilities } = getTenantMetrics(selectedTenant.id);
   const [searchQuery, setSearchQuery] = useState('');
-
+  const [activeFilter, setActiveFilter] = useState<'all' | SeverityLevel>('all');
+  
   // Calculate vulnerability metrics
   const totalVulnerabilities = vulnerabilities.length;
   const criticalCount = vulnerabilities.filter(v => v.severity === 'critical').length;
@@ -47,13 +49,27 @@ const Vulnerabilities = () => {
     { name: 'Low', value: lowCount },
   ];
   
-  // Filter vulnerabilities based on search query
-  const filteredVulnerabilities = vulnerabilities.filter(vulnerability => 
-    vulnerability.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vulnerability.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vulnerability.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (vulnerability.cve && vulnerability.cve.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Filter vulnerabilities based on search query and severity filter
+  const filteredVulnerabilities = vulnerabilities.filter(vulnerability => {
+    // Apply search filter
+    const matchesSearch = 
+      vulnerability.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vulnerability.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vulnerability.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (vulnerability.cve && vulnerability.cve.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // Apply severity filter
+    const matchesSeverity = activeFilter === 'all' || vulnerability.severity === activeFilter;
+    
+    return matchesSearch && matchesSeverity;
+  });
+
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    if (value === 'all' || value === 'critical' || value === 'high' || value === 'medium' || value === 'low') {
+      setActiveFilter(value as 'all' | SeverityLevel);
+    }
+  };
 
   // Get severity badge styling
   const getSeverityBadgeClasses = (severity: SeverityLevel) => {
@@ -211,7 +227,12 @@ const Vulnerabilities = () => {
       {/* Vulnerability Management Interface */}
       <div className="glass rounded-xl p-6 animate-fade-in">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
-          <Tabs defaultValue="all" className="w-full max-w-md">
+          <Tabs 
+            defaultValue="all" 
+            value={activeFilter}
+            onValueChange={handleTabChange}
+            className="w-full max-w-md"
+          >
             <TabsList>
               <TabsTrigger value="all">All Vulnerabilities</TabsTrigger>
               <TabsTrigger value="critical">Critical</TabsTrigger>
