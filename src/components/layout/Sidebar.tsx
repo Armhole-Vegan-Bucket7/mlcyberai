@@ -50,7 +50,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   };
 
   const routes = [
-    { icon: <ShieldCheck size={20} />, text: "CyberPosture", to: "/" },
+    { icon: <Shield size={20} />, text: "CyberPosture", to: "/" },
     { icon: <Shield size={20} />, text: "SOC Overview", to: "/soc" },
     { icon: <AlertCircle size={20} />, text: "Incidents", to: "/incidents" },
     { icon: <Bug size={20} />, text: "Vulnerabilities", to: "/vulnerabilities" },
