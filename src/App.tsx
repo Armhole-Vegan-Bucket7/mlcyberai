@@ -16,6 +16,12 @@ import Vulnerabilities from "./pages/Vulnerabilities";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 
+// Import new governance pages
+import Compliance from "./pages/governance/Compliance";
+import MaturityBenchmark from "./pages/governance/MaturityBenchmark";
+import BreachBoard from "./pages/governance/BreachBoard";
+import CustomerQBR from "./pages/governance/CustomerQBR";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -34,6 +40,13 @@ const App = () => (
               <Route path="/vulnerabilities" element={<ProtectedRoute><Vulnerabilities /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              
+              {/* Governance Routes */}
+              <Route path="/governance/compliance" element={<ProtectedRoute><Compliance /></ProtectedRoute>} />
+              <Route path="/governance/maturity-benchmark" element={<ProtectedRoute><MaturityBenchmark /></ProtectedRoute>} />
+              <Route path="/governance/breach-board" element={<ProtectedRoute><BreachBoard /></ProtectedRoute>} />
+              <Route path="/governance/customer-qbr" element={<ProtectedRoute><CustomerQBR /></ProtectedRoute>} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

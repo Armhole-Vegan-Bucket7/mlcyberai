@@ -11,7 +11,12 @@ import {
   Settings,
   X,
   ChevronRight,
-  Cpu
+  Cpu,
+  Gavel,
+  ClipboardCheck,
+  Award,
+  ShieldAlert,
+  UserCheck
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
@@ -92,6 +97,30 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     },
   ];
 
+  // Governance routes
+  const governanceRoutes = [
+    {
+      icon: <ClipboardCheck size={20} className="text-cyber-green" />,
+      text: "Compliance",
+      to: "/governance/compliance"
+    },
+    {
+      icon: <Award size={20} className="text-cyber-yellow" />,
+      text: "Maturity Benchmark",
+      to: "/governance/maturity-benchmark"
+    },
+    {
+      icon: <ShieldAlert size={20} className="text-cyber-red" />,
+      text: "Breach Board",
+      to: "/governance/breach-board"
+    },
+    {
+      icon: <UserCheck size={20} className="text-cyber-indigo" />,
+      text: "Customer QBR & NPS",
+      to: "/governance/customer-qbr"
+    }
+  ];
+
   // Group routes into categories
   const mainRoutes = routes.slice(0, 2);
   const securityRoutes = routes.slice(2, 4);
@@ -164,6 +193,26 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             </div>
             <div className="space-y-1">
               {securityRoutes.map((route) => (
+                <SidebarItem
+                  key={route.to}
+                  icon={route.icon}
+                  text={route.text}
+                  to={route.to}
+                  active={location.pathname === route.to}
+                />
+              ))}
+            </div>
+          </div>
+          
+          {/* Governance - New Category */}
+          <div>
+            <div className="px-4 mb-2">
+              <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
+                Governance
+              </h2>
+            </div>
+            <div className="space-y-1">
+              {governanceRoutes.map((route) => (
                 <SidebarItem
                   key={route.to}
                   icon={route.icon}
