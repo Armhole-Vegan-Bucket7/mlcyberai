@@ -1,4 +1,3 @@
-
 import React from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import MetricCard from '@/components/dashboard/MetricCard';
@@ -6,7 +5,6 @@ import StatusCard from '@/components/dashboard/StatusCard';
 import ChartCard from '@/components/dashboard/ChartCard';
 import ThreatActivityTable from '@/components/dashboard/ThreatActivityTable';
 import MetricsSearch from '@/components/dashboard/MetricsSearch';
-import MicrolandLogo from '@/components/reports/MicrolandLogo';
 import { Shield, AlertCircle, Bug, Clock, Users, Server } from 'lucide-react';
 
 // Mock data for dashboard
@@ -83,7 +81,6 @@ const Index = () => {
     <PageLayout>
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
         <div className="page-transition flex items-center gap-4">
-          <MicrolandLogo className="h-10" />
           <div>
             <h1 className="text-3xl font-bold">CyberPosture</h1>
             <p className="text-cyber-gray-500 mt-1">
@@ -185,7 +182,7 @@ const Index = () => {
         />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <ChartCard
           title="Vulnerability Distribution"
           type="pie"
