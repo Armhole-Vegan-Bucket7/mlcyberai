@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Define RACI role types
 type RaciRole = 'admin' | 'reader' | 'auditor' | 'customer' | 'ciso';
