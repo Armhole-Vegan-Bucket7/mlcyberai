@@ -43,10 +43,30 @@ export function TenantSelector() {
     };
   }, []);
   
+  // Handle keyboard accessibility
+  const handleKeyDown = (event: React.KeyboardEvent, tenant?: typeof TENANTS[0]) => {
+    switch (event.key) {
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        if (tenant) {
+          selectTenant(tenant);
+        } else {
+          toggleDropdown();
+        }
+        break;
+      case 'Escape':
+        event.preventDefault();
+        setIsOpen(false);
+        break;
+    }
+  };
+  
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
+        onKeyDown={handleKeyDown}
         className={cn(
           "flex items-center gap-2 px-3 py-2 rounded-lg",
           "hover:bg-cyber-gray-100 dark:hover:bg-cyber-gray-800 transition-colors"
@@ -71,6 +91,7 @@ export function TenantSelector() {
             <button
               key={tenant.id}
               onClick={() => selectTenant(tenant)}
+              onKeyDown={(e) => handleKeyDown(e, tenant)}
               className={cn(
                 "flex items-center gap-2 w-full px-3 py-2 text-left text-sm",
                 "hover:bg-accent hover:text-accent-foreground transition-colors",

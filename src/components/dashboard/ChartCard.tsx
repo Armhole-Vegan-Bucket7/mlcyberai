@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Info } from 'lucide-react';
 import {
@@ -19,6 +19,7 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
+import DataModal from '@/components/ui/data-modal';
 
 type ChartType = 'area' | 'bar' | 'line' | 'pie';
 
@@ -53,6 +54,16 @@ export function ChartCard({
   tooltip,
   colors = defaultColors
 }: ChartCardProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openDataModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const closeDataModal = () => {
+    setIsModalOpen(false);
+  };
+
   const renderChart = () => {
     switch (type) {
       case 'area':
@@ -216,9 +227,20 @@ export function ChartCard({
         </div>
       </div>
       
-      <div className="dashboard-card-content">
+      <div 
+        className="dashboard-card-content cursor-pointer" 
+        onDoubleClick={openDataModal}
+        title="Double-click to view data"
+      >
         {renderChart()}
       </div>
+
+      <DataModal 
+        isOpen={isModalOpen} 
+        onClose={closeDataModal} 
+        title={`${title} - Data`} 
+        data={data} 
+      />
     </div>
   );
 }
