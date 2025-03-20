@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import MetricCard from '@/components/dashboard/MetricCard';
 import StatusCard from '@/components/dashboard/StatusCard';
@@ -6,6 +7,7 @@ import ChartCard from '@/components/dashboard/ChartCard';
 import ThreatActivityTable from '@/components/dashboard/ThreatActivityTable';
 import MetricsSearch from '@/components/dashboard/MetricsSearch';
 import { Shield, AlertCircle, Bug, Clock, Users, Server } from 'lucide-react';
+import { format } from 'date-fns';
 
 // Mock data for dashboard
 const alertsChartData = [
@@ -77,6 +79,25 @@ const threatEvents = [
 ];
 
 const Index = () => {
+  const [currentDateTime, setCurrentDateTime] = useState('');
+  
+  useEffect(() => {
+    // Function to update the current date and time
+    const updateDateTime = () => {
+      const now = new Date();
+      setCurrentDateTime(format(now, 'MMMM d, yyyy HH:mm') + ' UTC');
+    };
+    
+    // Update immediately on mount
+    updateDateTime();
+    
+    // Then update every minute
+    const interval = setInterval(updateDateTime, 60000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <PageLayout>
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
@@ -90,7 +111,7 @@ const Index = () => {
         </div>
         
         <div className="glass rounded-full text-sm px-4 py-2 animate-slide-down">
-          Last updated: <span className="font-medium">December 1, 2023 16:45 UTC</span>
+          Last updated: <span className="font-medium">{currentDateTime}</span>
         </div>
       </div>
       
