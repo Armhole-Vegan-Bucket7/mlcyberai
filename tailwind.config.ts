@@ -60,7 +60,7 @@ export default {
 				cyber: {
 					blue: '#0076FF',
 					indigo: '#5856D6',
-					purple: '#AF52DE',
+					purple: '#9b87f5',
 					pink: '#FF2D55',
 					red: '#FF3B30',
 					orange: '#FF9500',

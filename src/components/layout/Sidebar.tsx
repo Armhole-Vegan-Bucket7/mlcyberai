@@ -10,9 +10,11 @@ import {
   BarChart3,
   Settings,
   X,
-  ChevronRight
+  ChevronRight,
+  Cpu
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Badge } from '@/components/ui/badge';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -117,7 +119,18 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       <div className={cn("flex flex-col h-full p-4", !isMobile && "pt-8")}>
         {!isMobile && (
           <div className="mb-8 px-4 animate-fade-in">
-            <h1 className="font-semibold text-xl">Microland Cyber AI Data Platform</h1>
+            <div className="flex flex-col space-y-1">
+              <div className="flex items-center">
+                <Cpu className="text-cyber-purple w-6 h-6 mr-2" />
+                <h1 className="font-bold text-xl bg-gradient-to-r from-cyber-blue to-cyber-purple bg-clip-text text-transparent">
+                  Microland Cyber AI
+                </h1>
+                <Badge variant="outline" className="ml-2 text-[9px] px-1 py-0 h-4 font-normal border-cyber-purple/40 text-cyber-purple">
+                  beta0.1
+                </Badge>
+              </div>
+              <h2 className="text-sm text-muted-foreground ml-8">Data Platform</h2>
+            </div>
           </div>
         )}
         
