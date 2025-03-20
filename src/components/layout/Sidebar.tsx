@@ -79,8 +79,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       <div className={cn("flex flex-col h-full p-4", !isMobile && "pt-8")}>
         {!isMobile && (
           <div className="mb-8 px-4">
-            <h1 className="font-semibold text-xl">Microland Cyber Data AI Engine</h1>
-            <p className="text-xs text-cyber-gray-500 mt-1">Unified Dashboard</p>
+            <h1 className="font-semibold text-xl">Microland</h1>
           </div>
         )}
         
@@ -94,20 +93,6 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               active={location.pathname === route.to}
             />
           ))}
-        </div>
-        
-        <div className="mt-auto pt-4 border-t border-sidebar-border">
-          <div className="glass rounded-lg p-3">
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-cyber-blue/10 flex items-center justify-center text-cyber-blue mr-3">
-                <span className="font-medium">MM</span>
-              </div>
-              <div>
-                <div className="text-sm font-medium">Microland MSSP</div>
-                <div className="text-xs text-cyber-gray-500">Admin Access</div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </aside>
