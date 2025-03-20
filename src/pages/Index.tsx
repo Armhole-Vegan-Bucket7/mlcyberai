@@ -6,6 +6,7 @@ import StatusCard from '@/components/dashboard/StatusCard';
 import ChartCard from '@/components/dashboard/ChartCard';
 import ThreatActivityTable from '@/components/dashboard/ThreatActivityTable';
 import MetricsSearch from '@/components/dashboard/MetricsSearch';
+import MicrolandLogo from '@/components/reports/MicrolandLogo';
 import { Shield, AlertCircle, Bug, Clock, Users, Server } from 'lucide-react';
 
 // Mock data for dashboard
@@ -81,11 +82,14 @@ const Index = () => {
   return (
     <PageLayout>
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-        <div className="page-transition">
-          <h1 className="text-3xl font-bold">CyberPosture</h1>
-          <p className="text-cyber-gray-500 mt-1">
-            Overview of your security posture across all systems
-          </p>
+        <div className="page-transition flex items-center gap-4">
+          <MicrolandLogo className="h-10" />
+          <div>
+            <h1 className="text-3xl font-bold">CyberPosture</h1>
+            <p className="text-cyber-gray-500 mt-1">
+              Overview of your security posture across all systems
+            </p>
+          </div>
         </div>
         
         <div className="glass rounded-full text-sm px-4 py-2 animate-slide-down">

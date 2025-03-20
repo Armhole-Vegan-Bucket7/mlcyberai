@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Navigate } from "react-router-dom";
@@ -7,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import MicrolandLogo from "@/components/reports/MicrolandLogo";
 import {
   Form,
   FormControl,
@@ -59,7 +59,6 @@ const Auth: React.FC = () => {
   const handleRegisterSubmit = async (values: RegisterFormValues) => {
     setFormError(null);
     
-    // Client-side password match validation
     if (values.password !== values.confirmPassword) {
       setFormError("Passwords do not match");
       return;
@@ -80,6 +79,9 @@ const Auth: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full p-4">
+        <div className="flex justify-center mb-6">
+          <MicrolandLogo className="h-12" />
+        </div>
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">
