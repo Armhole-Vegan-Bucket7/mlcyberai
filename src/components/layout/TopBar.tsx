@@ -1,6 +1,5 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
 import UserMenu from "@/components/UserMenu";
 import TenantSelector from "@/components/dashboard/TenantSelector";
 import MicrolandLogo from "@/components/reports/MicrolandLogo";
@@ -26,4 +25,3 @@ const TopBar = ({ setSidebarOpen }: TopBarProps) => {
 };
 
 export default TopBar;
-

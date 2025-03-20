@@ -7,9 +7,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User, Settings, LogOut } from "lucide-react";
 
 const UserMenu: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -34,6 +36,10 @@ const UserMenu: React.FC = () => {
       .substring(0, 2);
   };
 
+  const handleProfileClick = () => {
+    navigate("/settings");
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -44,12 +50,26 @@ const UserMenu: React.FC = () => {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem className="font-semibold">
-          {user.user_metadata?.full_name || user.email}
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="flex items-center justify-start gap-2 p-2">
+          <div className="flex flex-col space-y-1 leading-none">
+            <p className="font-medium">{user.user_metadata?.full_name || user.email}</p>
+            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
+          <User className="mr-2 h-4 w-4" />
+          <span>My Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => signOut()}>
-          Sign Out
+        <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Settings</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Sign Out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
