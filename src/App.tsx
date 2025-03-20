@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SOCOverview from "./pages/SOCOverview";
+import SOCProfile from "./pages/SOCProfile"; // Add import for new page
 import Incidents from "./pages/Incidents";
 import Vulnerabilities from "./pages/Vulnerabilities";
 import Reports from "./pages/Reports";
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/soc" element={<ProtectedRoute><SOCOverview /></ProtectedRoute>} />
+              <Route path="/soc-profile" element={<ProtectedRoute><SOCProfile /></ProtectedRoute>} />
               <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
               <Route path="/vulnerabilities" element={<ProtectedRoute><Vulnerabilities /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />

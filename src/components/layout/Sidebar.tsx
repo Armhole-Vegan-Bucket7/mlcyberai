@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -16,7 +15,8 @@ import {
   ClipboardCheck,
   Award,
   ShieldAlert,
-  UserCheck
+  UserCheck,
+  Globe
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
@@ -76,6 +76,11 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       to: "/soc" 
     },
     { 
+      icon: <Globe size={20} className="text-cyber-purple" />, 
+      text: "SOC Profile", 
+      to: "/soc-profile" 
+    },
+    { 
       icon: <AlertCircle size={20} className="text-cyber-red" />, 
       text: "Incidents", 
       to: "/incidents" 
@@ -97,7 +102,6 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     },
   ];
 
-  // Governance routes
   const governanceRoutes = [
     {
       icon: <ClipboardCheck size={20} className="text-cyber-green" />,
@@ -121,10 +125,9 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     }
   ];
 
-  // Group routes into categories
-  const mainRoutes = routes.slice(0, 2);
-  const securityRoutes = routes.slice(2, 4);
-  const systemRoutes = routes.slice(4);
+  const mainRoutes = routes.slice(0, 3);
+  const securityRoutes = routes.slice(3, 5);
+  const systemRoutes = routes.slice(5);
 
   return (
     <aside
@@ -164,7 +167,6 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         )}
         
         <div className="space-y-6 animate-slide-down">
-          {/* Main Navigation */}
           <div>
             <div className="px-4 mb-2">
               <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
@@ -184,7 +186,6 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             </div>
           </div>
           
-          {/* Security */}
           <div>
             <div className="px-4 mb-2">
               <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
@@ -204,7 +205,6 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             </div>
           </div>
           
-          {/* Governance - New Category */}
           <div>
             <div className="px-4 mb-2">
               <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
@@ -224,7 +224,6 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             </div>
           </div>
           
-          {/* System */}
           <div>
             <div className="px-4 mb-2">
               <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
