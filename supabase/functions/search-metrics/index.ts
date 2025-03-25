@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -48,7 +47,7 @@ const tenantsMetricsData = {
       mttr: "3.2 days"
     }
   },
-  // RSM tenant
+  // MLCyber Customer1 tenant (formerly RSM)
   "2": {
     security: {
       incidents: {
@@ -85,7 +84,7 @@ const tenantsMetricsData = {
       mttr: "2.5 days"
     }
   },
-  // Indorama tenant
+  // MLCyber Customer2 tenant (formerly Indorama)
   "3": {
     security: {
       incidents: {
