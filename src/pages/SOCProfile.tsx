@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { socProfileData, getUpdatedLogTraffic } from '@/data/socProfileData';
@@ -8,6 +7,8 @@ import GlobalMap from '@/components/soc-profile/GlobalMap';
 import { Globe, Activity, Server, Plus, Minus } from 'lucide-react';
 import MetricCard from '@/components/dashboard/MetricCard';
 import { Button } from '@/components/ui/button';
+import TechnologySection from '@/components/soc-profile/TechnologySection';
+import CommandCenterTable from '@/components/soc-profile/CommandCenterTable';
 
 const SOCProfile = () => {
   const [selectedCountry, setSelectedCountry] = useState<RegionCountry | null>(null);
@@ -208,6 +209,16 @@ const SOCProfile = () => {
               </ul>
             </div>
           </div>
+        </div>
+
+        <div className="glass rounded-lg p-4">
+          <h2 className="text-xl font-semibold mb-4">Security Technology Stack</h2>
+          <TechnologySection />
+        </div>
+
+        <div className="glass rounded-lg p-4">
+          <h2 className="text-xl font-semibold mb-4">Command Center – SOC Tradecraft Table</h2>
+          <CommandCenterTable />
         </div>
       </div>
     </PageLayout>
