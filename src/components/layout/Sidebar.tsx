@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -166,83 +168,85 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           </div>
         )}
         
-        <div className="space-y-6 animate-slide-down">
-          <div>
-            <div className="px-4 mb-2">
-              <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
-                Main
-              </h2>
+        <ScrollArea className="flex-1">
+          <div className="space-y-6 animate-slide-down pr-3">
+            <div>
+              <div className="px-4 mb-2">
+                <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
+                  Main
+                </h2>
+              </div>
+              <div className="space-y-1">
+                {mainRoutes.map((route) => (
+                  <SidebarItem
+                    key={route.to}
+                    icon={route.icon}
+                    text={route.text}
+                    to={route.to}
+                    active={location.pathname === route.to}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="space-y-1">
-              {mainRoutes.map((route) => (
-                <SidebarItem
-                  key={route.to}
-                  icon={route.icon}
-                  text={route.text}
-                  to={route.to}
-                  active={location.pathname === route.to}
-                />
-              ))}
+            
+            <div>
+              <div className="px-4 mb-2">
+                <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
+                  Security
+                </h2>
+              </div>
+              <div className="space-y-1">
+                {securityRoutes.map((route) => (
+                  <SidebarItem
+                    key={route.to}
+                    icon={route.icon}
+                    text={route.text}
+                    to={route.to}
+                    active={location.pathname === route.to}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <div className="px-4 mb-2">
+                <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
+                  Governance
+                </h2>
+              </div>
+              <div className="space-y-1">
+                {governanceRoutes.map((route) => (
+                  <SidebarItem
+                    key={route.to}
+                    icon={route.icon}
+                    text={route.text}
+                    to={route.to}
+                    active={location.pathname === route.to}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <div className="px-4 mb-2">
+                <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
+                  System
+                </h2>
+              </div>
+              <div className="space-y-1">
+                {systemRoutes.map((route) => (
+                  <SidebarItem
+                    key={route.to}
+                    icon={route.icon}
+                    text={route.text}
+                    to={route.to}
+                    active={location.pathname === route.to}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-          
-          <div>
-            <div className="px-4 mb-2">
-              <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
-                Security
-              </h2>
-            </div>
-            <div className="space-y-1">
-              {securityRoutes.map((route) => (
-                <SidebarItem
-                  key={route.to}
-                  icon={route.icon}
-                  text={route.text}
-                  to={route.to}
-                  active={location.pathname === route.to}
-                />
-              ))}
-            </div>
-          </div>
-          
-          <div>
-            <div className="px-4 mb-2">
-              <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
-                Governance
-              </h2>
-            </div>
-            <div className="space-y-1">
-              {governanceRoutes.map((route) => (
-                <SidebarItem
-                  key={route.to}
-                  icon={route.icon}
-                  text={route.text}
-                  to={route.to}
-                  active={location.pathname === route.to}
-                />
-              ))}
-            </div>
-          </div>
-          
-          <div>
-            <div className="px-4 mb-2">
-              <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
-                System
-              </h2>
-            </div>
-            <div className="space-y-1">
-              {systemRoutes.map((route) => (
-                <SidebarItem
-                  key={route.to}
-                  icon={route.icon}
-                  text={route.text}
-                  to={route.to}
-                  active={location.pathname === route.to}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+        </ScrollArea>
         
         <div className="mt-auto pt-6 px-4">
           <div className="bg-cyber-blue/5 p-4 rounded-lg border border-cyber-blue/10 animate-fade-in">
