@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -17,11 +17,13 @@ import {
   Award,
   ShieldAlert,
   UserCheck,
-  Globe
+  Globe,
+  ChevronDown
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -33,6 +35,12 @@ interface SidebarItemProps {
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+}
+
+interface SidebarSectionProps {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
 }
 
 const SidebarItem = ({ icon, text, to, active }: SidebarItemProps) => {
@@ -58,6 +66,32 @@ const SidebarItem = ({ icon, text, to, active }: SidebarItemProps) => {
   );
 };
 
+const SidebarSection = ({ title, children, defaultOpen = true }: SidebarSectionProps) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="transition-all duration-300">
+      <div className="px-4 mb-2">
+        <CollapsibleTrigger className="flex w-full items-center justify-between text-xs uppercase text-cyber-gray-500 font-medium tracking-wider py-2 hover:text-cyber-blue transition-colors">
+          <span>{title}</span>
+          <ChevronDown 
+            size={14} 
+            className={cn(
+              "transition-transform duration-300", 
+              isOpen ? "transform rotate-180" : ""
+            )}
+          />
+        </CollapsibleTrigger>
+      </div>
+      <CollapsibleContent className="animate-collapsible-down">
+        <div className="space-y-1">
+          {children}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
 export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -66,7 +100,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     setIsOpen(false);
   };
 
-  const routes = [
+  const mainRoutes = [
     { 
       icon: <LayoutDashboard size={20} className="text-cyber-blue" />, 
       text: "CyberPosture", 
@@ -82,6 +116,9 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       text: "SOC Profile", 
       to: "/soc-profile" 
     },
+  ];
+
+  const securityRoutes = [
     { 
       icon: <AlertCircle size={20} className="text-cyber-red" />, 
       text: "Incidents", 
@@ -91,16 +128,6 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       icon: <Bug size={20} className="text-cyber-orange" />, 
       text: "Vulnerabilities", 
       to: "/vulnerabilities" 
-    },
-    { 
-      icon: <BarChart3 size={20} className="text-cyber-teal" />, 
-      text: "Reports", 
-      to: "/reports" 
-    },
-    { 
-      icon: <Settings size={20} className="text-cyber-gray-500" />, 
-      text: "Settings", 
-      to: "/settings" 
     },
   ];
 
@@ -127,9 +154,18 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     }
   ];
 
-  const mainRoutes = routes.slice(0, 3);
-  const securityRoutes = routes.slice(3, 5);
-  const systemRoutes = routes.slice(5);
+  const systemRoutes = [
+    { 
+      icon: <BarChart3 size={20} className="text-cyber-teal" />, 
+      text: "Reports", 
+      to: "/reports" 
+    },
+    { 
+      icon: <Settings size={20} className="text-cyber-gray-500" />, 
+      text: "Settings", 
+      to: "/settings" 
+    },
+  ];
 
   return (
     <aside
@@ -169,82 +205,54 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         )}
         
         <ScrollArea className="flex-1">
-          <div className="space-y-6 animate-slide-down pr-3">
-            <div>
-              <div className="px-4 mb-2">
-                <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
-                  Main
-                </h2>
-              </div>
-              <div className="space-y-1">
-                {mainRoutes.map((route) => (
-                  <SidebarItem
-                    key={route.to}
-                    icon={route.icon}
-                    text={route.text}
-                    to={route.to}
-                    active={location.pathname === route.to}
-                  />
-                ))}
-              </div>
-            </div>
+          <div className="space-y-4 animate-slide-down pr-3">
+            <SidebarSection title="Main" defaultOpen={true}>
+              {mainRoutes.map((route) => (
+                <SidebarItem
+                  key={route.to}
+                  icon={route.icon}
+                  text={route.text}
+                  to={route.to}
+                  active={location.pathname === route.to}
+                />
+              ))}
+            </SidebarSection>
             
-            <div>
-              <div className="px-4 mb-2">
-                <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
-                  Security
-                </h2>
-              </div>
-              <div className="space-y-1">
-                {securityRoutes.map((route) => (
-                  <SidebarItem
-                    key={route.to}
-                    icon={route.icon}
-                    text={route.text}
-                    to={route.to}
-                    active={location.pathname === route.to}
-                  />
-                ))}
-              </div>
-            </div>
+            <SidebarSection title="Security" defaultOpen={false}>
+              {securityRoutes.map((route) => (
+                <SidebarItem
+                  key={route.to}
+                  icon={route.icon}
+                  text={route.text}
+                  to={route.to}
+                  active={location.pathname === route.to}
+                />
+              ))}
+            </SidebarSection>
             
-            <div>
-              <div className="px-4 mb-2">
-                <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
-                  Governance
-                </h2>
-              </div>
-              <div className="space-y-1">
-                {governanceRoutes.map((route) => (
-                  <SidebarItem
-                    key={route.to}
-                    icon={route.icon}
-                    text={route.text}
-                    to={route.to}
-                    active={location.pathname === route.to}
-                  />
-                ))}
-              </div>
-            </div>
+            <SidebarSection title="Governance" defaultOpen={false}>
+              {governanceRoutes.map((route) => (
+                <SidebarItem
+                  key={route.to}
+                  icon={route.icon}
+                  text={route.text}
+                  to={route.to}
+                  active={location.pathname === route.to}
+                />
+              ))}
+            </SidebarSection>
             
-            <div>
-              <div className="px-4 mb-2">
-                <h2 className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider">
-                  System
-                </h2>
-              </div>
-              <div className="space-y-1">
-                {systemRoutes.map((route) => (
-                  <SidebarItem
-                    key={route.to}
-                    icon={route.icon}
-                    text={route.text}
-                    to={route.to}
-                    active={location.pathname === route.to}
-                  />
-                ))}
-              </div>
-            </div>
+            <SidebarSection title="System" defaultOpen={false}>
+              {systemRoutes.map((route) => (
+                <SidebarItem
+                  key={route.to}
+                  icon={route.icon}
+                  text={route.text}
+                  to={route.to}
+                  active={location.pathname === route.to}
+                />
+              ))}
+            </SidebarSection>
           </div>
         </ScrollArea>
         
