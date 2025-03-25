@@ -11,13 +11,13 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SOCOverview from "./pages/SOCOverview";
-import SOCProfile from "./pages/SOCProfile"; // Add import for new page
+import SOCProfile from "./pages/SOCProfile"; // The file name remains the same
 import Incidents from "./pages/Incidents";
 import Vulnerabilities from "./pages/Vulnerabilities";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 
-// Import new governance pages
+// Import governance pages
 import Compliance from "./pages/governance/Compliance";
 import MaturityBenchmark from "./pages/governance/MaturityBenchmark";
 import BreachBoard from "./pages/governance/BreachBoard";

@@ -113,7 +113,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     },
     { 
       icon: <Globe size={20} className="text-cyber-purple" />, 
-      text: "SOC Profile", 
+      text: "Customer Profile", 
       to: "/soc-profile" 
     },
   ];
