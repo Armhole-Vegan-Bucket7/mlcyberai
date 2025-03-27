@@ -6,17 +6,19 @@ import { Badge } from '@/components/ui/badge';
 import { Shield, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-interface BreachData {
+interface ThreatData {
   id: string;
-  organization: string;
-  attack_vector: string;
-  industry: string;
-  breach_time: string;
-  severity: string;
+  organization?: string;
+  attack_vector?: string;
+  industry?: string;
+  timestamp: string;
+  severity?: string;
+  description?: string;
+  cve_id?: string;
 }
 
 interface TopBreachesProps {
-  breaches: BreachData[];
+  breaches: ThreatData[];
   loading: boolean;
 }
 
@@ -34,7 +36,7 @@ const TopBreaches: React.FC<TopBreachesProps> = ({ breaches, loading }) => {
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium flex items-center">
           <Shield className="w-4 h-4 mr-2 text-cyber-red" />
-          Top 5 Recent Breaches
+          Latest Intel
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -46,7 +48,7 @@ const TopBreaches: React.FC<TopBreachesProps> = ({ breaches, loading }) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[120px]">Organization</TableHead>
+                <TableHead className="w-[120px]">Target</TableHead>
                 <TableHead>Vector</TableHead>
                 <TableHead>Industry</TableHead>
                 <TableHead className="text-right">Time</TableHead>
@@ -54,17 +56,17 @@ const TopBreaches: React.FC<TopBreachesProps> = ({ breaches, loading }) => {
             </TableHeader>
             <TableBody>
               {breaches.map((breach) => (
-                <TableRow key={breach.id}>
-                  <TableCell className="font-medium">{breach.organization}</TableCell>
+                <TableRow key={breach.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableCell className="font-medium">{breach.organization || 'Unknown'}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={severityColors[breach.severity] || ''}>
+                    <Badge variant="outline" className={severityColors[breach.severity || 'medium'] || ''}>
                       {breach.attack_vector || 'Unknown'}
                     </Badge>
                   </TableCell>
-                  <TableCell>{breach.industry || 'Unknown'}</TableCell>
+                  <TableCell>{breach.industry || 'Technology'}</TableCell>
                   <TableCell className="text-right text-xs flex items-center justify-end">
                     <Clock className="w-3 h-3 mr-1 text-muted-foreground" />
-                    {formatDistanceToNow(new Date(breach.breach_time), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(breach.timestamp), { addSuffix: true })}
                   </TableCell>
                 </TableRow>
               ))}

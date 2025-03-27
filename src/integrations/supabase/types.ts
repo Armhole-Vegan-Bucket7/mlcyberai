@@ -102,6 +102,60 @@ export type Database = {
         }
         Relationships: []
       }
+      realtime_threats: {
+        Row: {
+          attack_vector: string | null
+          cve_id: string | null
+          description: string | null
+          id: string
+          industry: string | null
+          organization: string | null
+          region: string | null
+          severity: string | null
+          source_country: string | null
+          source_lat: number | null
+          source_lng: number | null
+          target_country: string | null
+          target_lat: number | null
+          target_lng: number | null
+          timestamp: string
+        }
+        Insert: {
+          attack_vector?: string | null
+          cve_id?: string | null
+          description?: string | null
+          id?: string
+          industry?: string | null
+          organization?: string | null
+          region?: string | null
+          severity?: string | null
+          source_country?: string | null
+          source_lat?: number | null
+          source_lng?: number | null
+          target_country?: string | null
+          target_lat?: number | null
+          target_lng?: number | null
+          timestamp: string
+        }
+        Update: {
+          attack_vector?: string | null
+          cve_id?: string | null
+          description?: string | null
+          id?: string
+          industry?: string | null
+          organization?: string | null
+          region?: string | null
+          severity?: string | null
+          source_country?: string | null
+          source_lat?: number | null
+          source_lng?: number | null
+          target_country?: string | null
+          target_lat?: number | null
+          target_lng?: number | null
+          timestamp?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       threat_vector_counts: {

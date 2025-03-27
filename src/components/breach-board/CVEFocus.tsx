@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bug } from 'lucide-react';
+import { Bug, ExternalLink } from 'lucide-react';
 
 interface CVE {
   id: string;
@@ -15,6 +15,10 @@ interface CVEFocusProps {
 }
 
 const CVEFocus: React.FC<CVEFocusProps> = ({ cves, loading }) => {
+  const openCveDetails = (cveId: string) => {
+    window.open(`https://nvd.nist.gov/vuln/detail/${cveId}`, '_blank');
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -33,9 +37,13 @@ const CVEFocus: React.FC<CVEFocusProps> = ({ cves, loading }) => {
             {cves.map((cve) => (
               <div key={cve.id} className="group">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-mono font-medium group-hover:text-cyber-blue transition-colors">
+                  <button 
+                    className="text-sm font-mono font-medium group-hover:text-cyber-blue transition-colors flex items-center"
+                    onClick={() => openCveDetails(cve.id)}
+                  >
                     {cve.id}
-                  </span>
+                    <ExternalLink className="ml-1 h-3 w-3 opacity-70" />
+                  </button>
                   <span className="text-xs px-1.5 py-0.5 bg-muted rounded-sm">
                     {cve.count} {cve.count === 1 ? 'instance' : 'instances'}
                   </span>

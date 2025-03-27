@@ -4,7 +4,8 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // Initialize mapbox
 mapboxgl.accessToken = 'pk.eyJ1IjoiY3liZXJtb25pdG9yIiwiYSI6ImNsbjUyZXI3ejAxZzAya3BnaDVxNDR1MnEifQ.OBIo_A64nBNaQWk-LQebeQ';
@@ -16,6 +17,27 @@ interface AttackData {
   organization: string;
   attack_vector: string;
   severity: string;
+  description?: string;
+  timestamp?: string;
+  cve_id?: string;
+}
+
+interface RealtimeThreat {
+  id: string;
+  timestamp: string;
+  source_country?: string;
+  source_lat?: number;
+  source_lng?: number;
+  target_country?: string;
+  target_lat?: number;
+  target_lng?: number;
+  organization?: string;
+  industry?: string;
+  region?: string;
+  severity?: string;
+  attack_vector?: string;
+  cve_id?: string;
+  description?: string;
 }
 
 // Define severity colors
@@ -32,6 +54,26 @@ const WorldAttackMap: React.FC = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [loading, setLoading] = useState(true);
   const [attacks, setAttacks] = useState<AttackData[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Function to convert a RealtimeThreat to AttackData
+  const threatToAttackData = (threat: RealtimeThreat): AttackData | null => {
+    if (!threat.source_lat || !threat.source_lng || !threat.target_lat || !threat.target_lng) {
+      return null;
+    }
+    
+    return {
+      id: threat.id,
+      source: [threat.source_lng, threat.source_lat] as [number, number],
+      target: [threat.target_lng, threat.target_lat] as [number, number],
+      organization: threat.organization || 'Unknown Organization',
+      attack_vector: threat.attack_vector || 'Unknown',
+      severity: threat.severity || 'medium',
+      description: threat.description,
+      timestamp: threat.timestamp,
+      cve_id: threat.cve_id,
+    };
+  };
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -85,13 +127,13 @@ const WorldAttackMap: React.FC = () => {
 
     // Start listening for real-time updates
     const channel = supabase
-      .channel('breach-data-changes')
+      .channel('realtime-threats-changes')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'breach_data'
+          table: 'realtime_threats'
         },
         handleRealtimeUpdate
       )
@@ -123,36 +165,40 @@ const WorldAttackMap: React.FC = () => {
       userInteracting = false;
     });
 
+    // Setup interval to fetch new data every 10 minutes
+    const intervalId = setInterval(() => {
+      refreshData();
+    }, 10 * 60 * 1000); // 10 minutes
+
     return () => {
       map.current?.remove();
       supabase.removeChannel(channel);
+      clearInterval(intervalId);
     };
   }, []);
 
   const fetchBreachData = async () => {
     try {
       const { data, error } = await supabase
-        .from('breach_data')
+        .from('realtime_threats')
         .select('*')
-        .order('breach_time', { ascending: false })
+        .order('timestamp', { ascending: false })
         .limit(30);
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const formattedAttacks: AttackData[] = data.map(item => ({
-          id: item.id,
-          source: [item.source_longitude || 0, item.source_latitude || 0] as [number, number],
-          target: [item.longitude || 0, item.latitude || 0] as [number, number],
-          organization: item.organization,
-          attack_vector: item.attack_vector || 'Unknown',
-          severity: item.severity || 'medium',
-        }));
+        const formattedAttacks: AttackData[] = data
+          .map(threatToAttackData)
+          .filter(Boolean) as AttackData[];
 
         setAttacks(formattedAttacks);
         formattedAttacks.forEach(attack => {
           addAttackToMap(attack);
         });
+      } else {
+        // If no data exists, trigger the edge function to generate some
+        generateInitialData();
       }
     } catch (error) {
       console.error('Error fetching breach data:', error);
@@ -164,19 +210,69 @@ const WorldAttackMap: React.FC = () => {
     }
   };
 
+  const generateInitialData = async () => {
+    try {
+      setRefreshing(true);
+      const { data, error } = await supabase.functions.invoke('fetch-breach-intel', {
+        body: { skipRealFetching: true }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Data Generated",
+        description: `Generated ${data.insertedCount} breach data points for demonstration.`,
+      });
+      
+      // Fetch the newly generated data
+      fetchBreachData();
+    } catch (error) {
+      console.error('Error generating initial data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate initial breach data",
+        variant: "destructive"
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const refreshData = async () => {
+    try {
+      setRefreshing(true);
+      const { data, error } = await supabase.functions.invoke('fetch-breach-intel', {
+        body: { mode: 'force' }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Data Refreshed",
+        description: `Found ${data.threatCount} threats, added ${data.insertedCount} new ones.`,
+      });
+      
+      // No need to fetch again as realtime subscription will update the UI
+    } catch (error) {
+      console.error('Error refreshing breach data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh breach data",
+        variant: "destructive"
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleRealtimeUpdate = (payload: any) => {
-    const newItem = payload.new;
+    console.log('Realtime update received:', payload);
+    const newItem = payload.new as RealtimeThreat;
     
-    if (!newItem.source_longitude || !newItem.longitude) return;
+    if (!newItem.source_lat || !newItem.source_lng || !newItem.target_lat || !newItem.target_lng) return;
     
-    const attack: AttackData = {
-      id: newItem.id,
-      source: [newItem.source_longitude, newItem.source_latitude] as [number, number],
-      target: [newItem.longitude, newItem.latitude] as [number, number],
-      organization: newItem.organization,
-      attack_vector: newItem.attack_vector || 'Unknown',
-      severity: newItem.severity || 'medium',
-    };
+    const attack = threatToAttackData(newItem);
+    if (!attack) return;
 
     setAttacks(prev => [...prev, attack]);
     addAttackToMap(attack);
@@ -269,6 +365,8 @@ const WorldAttackMap: React.FC = () => {
             'properties': {
               'description': `
                 <strong>${attack.organization}</strong><br/>
+                ${attack.description ? `${attack.description}<br/>` : ''}
+                ${attack.cve_id ? `CVE: ${attack.cve_id}<br/>` : ''}
                 Attack: ${attack.attack_vector}<br/>
                 Severity: ${attack.severity}
               `
@@ -387,6 +485,22 @@ const WorldAttackMap: React.FC = () => {
         </div>
       ) : null}
       <div ref={mapContainer} className="w-full h-full" />
+      <div className="absolute top-4 right-4 z-10">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={refreshData}
+          disabled={refreshing}
+          className="bg-black/60 hover:bg-black/80 text-white border-gray-700"
+        >
+          {refreshing ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
+          Refresh Data
+        </Button>
+      </div>
       <div className="absolute bottom-4 left-4 bg-black/60 p-2 rounded text-xs text-white">
         <div className="flex items-center space-x-2 mb-1">
           <span className="inline-block w-3 h-3 rounded-full bg-cyber-red"></span>

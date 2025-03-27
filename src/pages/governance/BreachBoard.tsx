@@ -11,11 +11,10 @@ import SectorBadge from '@/components/breach-board/SectorBadge';
 import ThreatVectorChart from '@/components/breach-board/ThreatVectorChart';
 import CVEFocus from '@/components/breach-board/CVEFocus';
 import { Button } from '@/components/ui/button';
-import { Loader2, BarChart2, RefreshCw } from 'lucide-react';
+import { BarChart2, RefreshCw, Shield, ExternalLink } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 
 const BreachBoard = () => {
-  // Generate sample data for demo purposes
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Fetch recent breaches
@@ -27,9 +26,9 @@ const BreachBoard = () => {
     queryKey: ['recent-breaches'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('breach_data')
+        .from('realtime_threats')
         .select('*')
-        .order('breach_time', { ascending: false })
+        .order('timestamp', { ascending: false })
         .limit(5);
         
       if (error) throw error;
@@ -65,10 +64,10 @@ const BreachBoard = () => {
       const counts = await Promise.all(
         days.map(async (day) => {
           const { count, error } = await supabase
-            .from('breach_data')
+            .from('realtime_threats')
             .select('*', { count: 'exact', head: true })
-            .gte('breach_time', day.start)
-            .lte('breach_time', day.end);
+            .gte('timestamp', day.start)
+            .lte('timestamp', day.end);
             
           if (error) throw error;
           
@@ -92,14 +91,17 @@ const BreachBoard = () => {
     queryKey: ['threat-vectors'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('threat_vector_counts')
-        .select('*');
+        .from('realtime_threats')
+        .select('attack_vector, count(*)')
+        .not('attack_vector', 'is', null)
+        .group('attack_vector')
+        .order('count', { ascending: false });
         
       if (error) throw error;
       
       return (data || []).map(item => ({
         name: item.attack_vector || 'Unknown',
-        value: item.count || 0,
+        value: parseInt(item.count) || 0,
       }));
     }
   });
@@ -113,10 +115,10 @@ const BreachBoard = () => {
     queryKey: ['cve-focus'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('breach_data')
-        .select('cve_id, cve_description')
+        .from('realtime_threats')
+        .select('cve_id, description')
         .not('cve_id', 'is', null)
-        .order('breach_time', { ascending: false });
+        .order('timestamp', { ascending: false });
         
       if (error) throw error;
       
@@ -131,7 +133,7 @@ const BreachBoard = () => {
         } else {
           cveMap.set(item.cve_id, {
             id: item.cve_id,
-            description: item.cve_description || 'No description available',
+            description: item.description || 'No description available',
             count: 1,
           });
         }
@@ -151,35 +153,20 @@ const BreachBoard = () => {
     v.name.toLowerCase().includes('phishing')
   ) ? 'high' : 'medium';
 
-  // Seed initial data when the app loads
-  useEffect(() => {
-    const seedData = async () => {
-      try {
-        await supabase.functions.invoke('fetch-breach-data', {
-          body: { action: 'seed' }
-        });
-      } catch (error) {
-        console.error('Error seeding breach data:', error);
-      }
-    };
-    
-    seedData();
-  }, []);
-
-  // Function to generate new breach data for demo purposes
-  const generateSampleBreach = async () => {
+  // Trigger edge function to fetch new data
+  const fetchBreachIntel = async () => {
     setIsGenerating(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-breach-data', {
-        body: { action: 'generate' }
+      const { data, error } = await supabase.functions.invoke('fetch-breach-intel', {
+        body: { mode: 'force' }
       });
       
       if (error) throw error;
       
       toast({
-        title: 'New breach detected',
-        description: `${data.data.organization} security incident reported.`,
+        title: 'Breach Intelligence Updated',
+        description: `Found ${data.threatCount} threats, added ${data.insertedCount} new ones.`,
       });
       
       // Refetch all data
@@ -188,10 +175,10 @@ const BreachBoard = () => {
       refetchVectors();
       refetchCVEs();
     } catch (error) {
-      console.error('Error generating breach:', error);
+      console.error('Error fetching breach intel:', error);
       toast({
         title: 'Error',
-        description: 'Failed to generate sample breach data',
+        description: 'Failed to update breach intelligence data',
         variant: 'destructive',
       });
     } finally {
@@ -219,24 +206,36 @@ const BreachBoard = () => {
       title="Breach Board" 
       description="Real-time cybersecurity breach intelligence dashboard"
     >
-      <div className="flex justify-end space-x-3 mb-4">
-        <Button 
-          variant="outline" 
-          onClick={generateSampleBreach}
-          disabled={isGenerating}
-        >
-          {isGenerating ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="mr-2 h-4 w-4" />
-          )}
-          Simulate Breach
-        </Button>
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center">
+          <Shield className="text-cyber-blue mr-2 h-5 w-5" />
+          <h2 className="text-xl font-semibold">Live Threat Intelligence</h2>
+        </div>
         
-        <Button onClick={exportIntelReport}>
-          <BarChart2 className="mr-2 h-4 w-4" />
-          View Threat Intel Report
-        </Button>
+        <div className="flex space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={fetchBreachIntel}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Refresh Intel
+          </Button>
+          
+          <Button onClick={exportIntelReport}>
+            <BarChart2 className="mr-2 h-4 w-4" />
+            Generate Intel Report
+          </Button>
+          
+          <Button variant="outline">
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Intelligence Sources
+          </Button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
