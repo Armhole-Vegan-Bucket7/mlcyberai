@@ -71,6 +71,15 @@ const mockUsers: User[] = [
   { id: '5', name: 'Michael Brown', email: 'michael@example.com', role: 'ciso', tenantAccess: ['All Tenants'] },
 ];
 
+// Define role descriptions for RACI roles
+const roleDescriptions = {
+  admin: 'Full access to all features and tenants',
+  reader: 'View-only access to assigned tenants',
+  auditor: 'Access to audit logs and compliance reports',
+  customer: 'Limited access to specific tenant data',
+  ciso: 'Executive-level access to risk and compliance metrics'
+};
+
 // Timezones array for the dropdown
 const timezones = [
   "UTC",
