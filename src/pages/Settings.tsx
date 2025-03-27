@@ -421,7 +421,6 @@ const Settings = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="profile" className="text-sm">My Profile</TabsTrigger>
           <TabsTrigger value="preferences" className="text-sm">Preferences</TabsTrigger>
-          <TabsTrigger value="security" className="text-sm">Security</TabsTrigger>
           <TabsTrigger value="user-roles" className="text-sm">User Roles (RACI)</TabsTrigger>
           <TabsTrigger value="api" className="text-sm">API Access</TabsTrigger>
         </TabsList>
@@ -619,6 +618,113 @@ const Settings = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Lock className="h-5 w-5" />
+                    Security Settings
+                  </CardTitle>
+                  <CardDescription>
+                    Configure authentication and security measures
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="two-factor" className="flex items-center gap-2">
+                        {twoFactorAuth ? (
+                          <ShieldCheck className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <ShieldX className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        Two-Factor Authentication
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        {twoFactorAuth 
+                          ? "Your account is protected with two-factor authentication" 
+                          : "Add an additional layer of security to your account"}
+                      </p>
+                    </div>
+                    {checkingTOTPStatus ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Switch
+                        id="two-factor"
+                        checked={twoFactorAuth}
+                        onCheckedChange={handleTwoFactorAuthToggle}
+                        disabled={disablingTOTP || showTOTPSetup}
+                      />
+                    )}
+                  </div>
+
+                  {showTOTPSetup && (
+                    <div className="mt-6 pt-4 border-t">
+                      <TOTPSetup 
+                        onSuccess={handleTOTPSetupSuccess}
+                        onCancel={handleTOTPSetupCancel}
+                      />
+                    </div>
+                  )}
+
+                  {twoFactorAuth && !showTOTPSetup && (
+                    <div className="mt-4 pt-4 border-t">
+                      <Alert className="bg-green-50 border-green-200">
+                        <ShieldCheck className="h-4 w-4 text-green-500" />
+                        <AlertTitle>Two-Factor Authentication is enabled</AlertTitle>
+                        <AlertDescription>
+                          Your account is protected with an additional layer of security. You will need to enter a code from your authenticator app when signing in.
+                        </AlertDescription>
+                      </Alert>
+                      
+                      <div className="mt-4">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50">
+                              <ShieldX className="mr-2 h-4 w-4" />
+                              Disable Two-Factor Authentication
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Disabling two-factor authentication will make your account less secure. You will no longer need an authenticator app to sign in.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleTwoFactorAuthToggle(false)}
+                                className="bg-red-500 hover:bg-red-600"
+                              >
+                                {disablingTOTP ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Disabling...
+                                  </>
+                                ) : (
+                                  'Disable 2FA'
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter>
+                  <Alert>
+                    <Info className="h-5 w-5" />
+                    <AlertTitle>Session Security</AlertTitle>
+                    <AlertDescription>
+                      For your security, your session will automatically expire after 30 minutes of inactivity.
+                      You can adjust this in the organization settings.
+                    </AlertDescription>
+                  </Alert>
+                </CardFooter>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
                     Change Password
                   </CardTitle>
                   <CardDescription>
@@ -731,117 +837,6 @@ const Settings = () => {
               <Button onClick={handleSavePreferences} size="sm" className="text-sm">Save Notification Settings</Button>
             </CardFooter>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="security" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" />
-                Security Settings
-              </CardTitle>
-              <CardDescription>
-                Configure authentication and security measures
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="two-factor" className="flex items-center gap-2">
-                    {twoFactorAuth ? (
-                      <ShieldCheck className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <ShieldX className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    Two-Factor Authentication
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {twoFactorAuth 
-                      ? "Your account is protected with two-factor authentication" 
-                      : "Add an additional layer of security to your account"}
-                  </p>
-                </div>
-                {checkingTOTPStatus ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                ) : (
-                  <Switch
-                    id="two-factor"
-                    checked={twoFactorAuth}
-                    onCheckedChange={handleTwoFactorAuthToggle}
-                    disabled={disablingTOTP || showTOTPSetup}
-                  />
-                )}
-              </div>
-
-              {showTOTPSetup && (
-                <div className="mt-6 pt-4 border-t">
-                  <TOTPSetup 
-                    onSuccess={handleTOTPSetupSuccess}
-                    onCancel={handleTOTPSetupCancel}
-                  />
-                </div>
-              )}
-
-              {twoFactorAuth && !showTOTPSetup && (
-                <div className="mt-4 pt-4 border-t">
-                  <Alert className="bg-green-50 border-green-200">
-                    <ShieldCheck className="h-4 w-4 text-green-500" />
-                    <AlertTitle>Two-Factor Authentication is enabled</AlertTitle>
-                    <AlertDescription>
-                      Your account is protected with an additional layer of security. You will need to enter a code from your authenticator app when signing in.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <div className="mt-4">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50">
-                          <ShieldX className="mr-2 h-4 w-4" />
-                          Disable Two-Factor Authentication
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Disabling two-factor authentication will make your account less secure. You will no longer need an authenticator app to sign in.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleTwoFactorAuthToggle(false)}
-                            className="bg-red-500 hover:bg-red-600"
-                          >
-                            {disablingTOTP ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Disabling...
-                              </>
-                            ) : (
-                              'Disable 2FA'
-                            )}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSavePreferences}>Save Security Settings</Button>
-            </CardFooter>
-          </Card>
-
-          <Alert>
-            <Info className="h-5 w-5" />
-            <AlertTitle>Session Security</AlertTitle>
-            <AlertDescription>
-              For your security, your session will automatically expire after 30 minutes of inactivity.
-              You can adjust this in the organization settings.
-            </AlertDescription>
-          </Alert>
         </TabsContent>
 
         <TabsContent value="user-roles" className="space-y-4">
