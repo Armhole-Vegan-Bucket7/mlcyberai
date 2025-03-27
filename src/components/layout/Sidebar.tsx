@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -195,13 +194,11 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       <div className={cn("flex flex-col h-full p-4", !isMobile && "pt-8")}>
         {!isMobile && (
           <div className="mb-8 px-4 animate-fade-in">
-            <div className="flex flex-col space-y-1">
-              <div className="flex items-center">
-                <Cpu className="text-cyber-purple w-6 h-6 mr-2" />
-                <h1 className="font-bold text-lg bg-gradient-to-r from-cyber-blue to-cyber-purple bg-clip-text text-transparent">
-                  Cyber AI Command
-                </h1>
-              </div>
+            <div className="flex items-center">
+              <Cpu className="text-cyber-purple w-5 h-5 mr-1.5 shrink-0" />
+              <h1 className="font-bold text-sm whitespace-nowrap bg-gradient-to-r from-cyber-blue to-cyber-purple bg-clip-text text-transparent">
+                Cyber AI Command
+              </h1>
             </div>
           </div>
         )}
