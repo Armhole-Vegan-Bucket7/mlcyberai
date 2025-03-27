@@ -14,78 +14,80 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Settings, LogOut } from "lucide-react";
 
 const UserMenu: React.FC = () => {
-  // Wrap in try/catch to handle cases where this component might render
-  // before AuthProvider is fully initialized
+  const navigate = useNavigate();
+  let authError = false;
+  let user = null;
+  let signOut = null;
+
   try {
-    const { user, signOut } = useAuth();
-    const navigate = useNavigate();
-
-    if (!user) {
-      return (
-        <Button onClick={() => navigate("/auth")}>
-          Sign In
-        </Button>
-      );
-    }
-
-    // Get user initials for avatar fallback
-    const getInitials = () => {
-      const name = user.user_metadata?.full_name || user.email || "";
-      return name
-        .split(" ")
-        .map((part: string) => part.charAt(0))
-        .join("")
-        .toUpperCase()
-        .substring(0, 2);
-    };
-
-    const handleProfileClick = () => {
-      navigate("/settings");
-    };
-
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-            <Avatar>
-              <AvatarImage src={user.user_metadata?.avatar_url} />
-              <AvatarFallback>{getInitials()}</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <div className="flex items-center justify-start gap-2 p-2">
-            <div className="flex flex-col space-y-1 leading-none">
-              <p className="font-medium">{user.user_metadata?.full_name || user.email}</p>
-              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-            </div>
-          </div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
-            <User className="mr-2 h-4 w-4" />
-            <span>My Profile</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Sign Out</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
+    // Try to get auth context
+    const auth = useAuth();
+    user = auth.user;
+    signOut = auth.signOut;
   } catch (error) {
-    // If AuthProvider is not available, render a simple sign-in button
-    const navigate = useNavigate();
+    // Handle case where auth context isn't available yet
+    console.error("Auth context not available:", error);
+    authError = true;
+  }
+
+  // If auth context failed or user is not logged in, show sign in button
+  if (authError || !user) {
     return (
       <Button onClick={() => navigate("/auth")}>
         Sign In
       </Button>
     );
   }
+
+  // Get user initials for avatar fallback
+  const getInitials = () => {
+    const name = user.user_metadata?.full_name || user.email || "";
+    return name
+      .split(" ")
+      .map((part: string) => part.charAt(0))
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const handleProfileClick = () => {
+    navigate("/settings");
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+          <Avatar>
+            <AvatarImage src={user.user_metadata?.avatar_url} />
+            <AvatarFallback>{getInitials()}</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="flex items-center justify-start gap-2 p-2">
+          <div className="flex flex-col space-y-1 leading-none">
+            <p className="font-medium">{user.user_metadata?.full_name || user.email}</p>
+            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
+          <User className="mr-2 h-4 w-4" />
+          <span>My Profile</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Settings</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Sign Out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 };
 
 export default UserMenu;

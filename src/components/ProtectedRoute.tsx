@@ -24,8 +24,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     // Render children if authenticated
     return <>{children}</>;
   } catch (error) {
-    // If the auth context isn't available yet, redirect to auth
-    console.error("Auth context not available:", error);
+    // If the auth context isn't available yet, show a helpful message and redirect
+    console.error("Auth context error:", error);
     return <Navigate to="/auth" replace />;
   }
 };

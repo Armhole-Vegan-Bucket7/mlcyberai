@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -29,11 +30,13 @@ const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, errorMessage: s
 };
 
 const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel }) => {
+  const { session } = useAuth();
   const [verificationCode, setVerificationCode] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verificationFailed, setVerificationFailed] = useState(false);
   const { toast } = useToast();
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   
   // Set up cleanup timeout for loading state
   useEffect(() => {
@@ -46,6 +49,11 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
           setLoading(false);
           setError("Verification timed out. The authentication service might be unavailable. Please try again later.");
           setVerificationFailed(true);
+          
+          // Abort any pending fetch requests
+          if (abortController) {
+            abortController.abort();
+          }
         }
       }, 15000);
     }
@@ -53,11 +61,30 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [loading]);
+  }, [loading, abortController]);
+
+  useEffect(() => {
+    // Cleanup resources when component unmounts
+    return () => {
+      if (abortController) {
+        abortController.abort();
+      }
+    };
+  }, [abortController]);
 
   // Verify the TOTP code provided by the user
   const verifyTOTP = async () => {
+    if (!session) {
+      setError("Authentication session not found. Please sign in again.");
+      setVerificationFailed(true);
+      return;
+    }
+    
     if (!verificationCode || verificationCode.length !== 6) return;
+    
+    // Create a new abort controller for this request
+    const controller = new AbortController();
+    setAbortController(controller);
     
     setLoading(true);
     setError(null);
@@ -71,6 +98,10 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
           action: 'validate',
           code: verificationCode
         },
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
       
       const { data, error } = await withTimeout(
@@ -81,7 +112,7 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       
       if (error) {
         console.error('TOTP validation error:', error);
-        throw new Error("We're unable to connect to the authentication service. Please try again shortly.");
+        throw new Error(error.message || "We're unable to connect to the authentication service. Please try again shortly.");
       }
       
       console.log("TOTP validation result:", data);
@@ -101,6 +132,12 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
         setVerificationCode('');
       }
     } catch (err: any) {
+      // Skip setting error if request was aborted intentionally
+      if (err.name === 'AbortError') {
+        console.log('Request was aborted');
+        return;
+      }
+      
       console.error('Error verifying TOTP:', err);
       setError(err.message || 'Failed to verify the code. Please try again.');
       setVerificationCode('');
@@ -110,6 +147,7 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       }
     } finally {
       setLoading(false);
+      setAbortController(null);
     }
   };
 

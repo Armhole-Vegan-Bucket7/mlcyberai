@@ -43,30 +43,56 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
   const [secretCopied, setSecretCopied] = useState(false);
   const [setupFailed, setSetupFailed] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   // Set up cleanup timeout for loading state
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
     if (loading) {
-      // Auto-reset loading state after 15 seconds to prevent hanging UI
+      // Auto-reset loading state after 20 seconds to prevent hanging UI
       timer = setTimeout(() => {
         if (loading) {
           setLoading(false);
           setSetupFailed(true);
           setError("Operation timed out. The authentication service might be unavailable. Please try again later.");
+          
+          // Abort any pending fetch requests
+          if (abortController) {
+            abortController.abort();
+          }
         }
-      }, 15000);
+      }, 20000);
     }
     
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [loading]);
+  }, [loading, abortController]);
+
+  useEffect(() => {
+    // Cleanup resources when component unmounts
+    return () => {
+      if (abortController) {
+        abortController.abort();
+      }
+      if (qrCodeUrl) {
+        URL.revokeObjectURL(qrCodeUrl);
+      }
+    };
+  }, [abortController, qrCodeUrl]);
 
   // Generate a new TOTP secret and QR code
   const generateTOTP = async () => {
-    if (!session) return;
+    if (!session) {
+      setError("Authentication session not found. Please sign in again.");
+      setSetupFailed(true);
+      return;
+    }
+    
+    // Create a new abort controller for this request
+    const controller = new AbortController();
+    setAbortController(controller);
     
     setLoading(true);
     setError(null);
@@ -77,17 +103,21 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
       
       const generatePromise = supabase.functions.invoke('totp', {
         body: { action: 'generate' },
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
       
       const { data, error } = await withTimeout(
         generatePromise,
-        12000, // 12 seconds timeout
+        15000, // 15 seconds timeout
         "We're unable to connect to the authentication service. Please try again shortly."
       );
       
       if (error) {
         console.error('Supabase Edge Function error:', error);
-        throw new Error("We're unable to connect to the authentication service. Please try again shortly.");
+        throw new Error(error.message || "We're unable to connect to the authentication service. Please try again shortly.");
       }
       
       console.log("TOTP generation result:", data);
@@ -102,10 +132,14 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
         
         try {
           // Generate QR code for the OTP Auth URL
-          const qrResponse = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.otpauth)}`);
+          const qrResponse = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.otpauth)}`, {
+            signal: controller.signal,
+          });
+          
           if (qrResponse.ok) {
             const qrBlob = await qrResponse.blob();
-            setQrCodeUrl(URL.createObjectURL(qrBlob));
+            const url = URL.createObjectURL(qrBlob);
+            setQrCodeUrl(url);
           } else {
             console.error("QR code generation HTTP error:", qrResponse.status);
             throw new Error("Failed to generate QR code");
@@ -125,6 +159,12 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
         throw new Error("Invalid response from authentication service");
       }
     } catch (err: any) {
+      // Skip setting error if request was aborted intentionally
+      if (err.name === 'AbortError') {
+        console.log('Request was aborted');
+        return;
+      }
+      
       console.error('Error generating TOTP:', err);
       setError(err.message || "We're unable to connect to the authentication service. Please try again shortly.");
       
@@ -137,12 +177,20 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
       }
     } finally {
       setLoading(false);
+      setAbortController(null);
     }
   };
 
   // Verify the TOTP code provided by the user
   const verifyTOTP = async () => {
-    if (!session || !secret) return;
+    if (!session || !secret) {
+      setError("Missing session or secret. Please restart the setup process.");
+      return;
+    }
+    
+    // Create a new abort controller for this request
+    const controller = new AbortController();
+    setAbortController(controller);
     
     setVerifying(true);
     setError(null);
@@ -156,17 +204,21 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
           secret,
           verificationCode
         },
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
       
       const { data, error } = await withTimeout(
         verifyPromise,
-        12000, // 12 seconds timeout
+        15000, // 15 seconds timeout
         "Verification timed out. The authentication service might be unavailable. Please try again later."
       );
       
       if (error) {
         console.error('Edge Function error:', error);
-        throw new Error("We're unable to connect to the authentication service. Please try again shortly.");
+        throw new Error(error.message || "We're unable to connect to the authentication service. Please try again shortly.");
       }
       
       console.log("TOTP verification result:", data);
@@ -186,10 +238,17 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
         setError("Verification failed. Please make sure you entered the correct code from your authenticator app.");
       }
     } catch (err: any) {
+      // Skip setting error if request was aborted intentionally
+      if (err.name === 'AbortError') {
+        console.log('Request was aborted');
+        return;
+      }
+      
       console.error('Error verifying TOTP:', err);
       setError(err.message || 'Failed to verify the code. Please make sure you entered the correct code from your authenticator app.');
     } finally {
       setVerifying(false);
+      setAbortController(null);
     }
   };
 
@@ -219,6 +278,13 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
       console.log("Session available, generating TOTP...");
       generateTOTP();
     }
+    
+    return () => {
+      // Clean up on unmount
+      if (abortController) {
+        abortController.abort();
+      }
+    };
   }, [session]);
 
   // Retry setup

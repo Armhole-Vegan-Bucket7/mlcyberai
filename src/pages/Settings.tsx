@@ -640,12 +640,17 @@ const Settings = () => {
                       {totpStatusError && (
                         <div className="flex items-center mt-1">
                           <p className="text-sm text-red-500 mr-2">
-                            {totpStatusError}
+                            {totpStatusError.message || "Two-Factor Authentication is currently unavailable. Please try again later."}
                           </p>
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={retryTotpStatus} 
+                            onClick={() => {
+                              resetTotpStatus();
+                              checkTotpStatus().catch(error => {
+                                console.error("Error rechecking TOTP status:", error);
+                              });
+                            }} 
                             disabled={isTotpStatusLoading}
                           >
                             {isTotpStatusLoading ? (
@@ -664,8 +669,11 @@ const Settings = () => {
                       <Switch
                         id="two-factor"
                         checked={!!totpEnabled}
-                        onCheckedChange={handleTwoFactorAuthToggle}
-                        disabled={isTotpStatusLoading || disablingTOTP || showTOTPSetup || showTOTPVerification}
+                        onCheckedChange={e => {
+                          resetTotpStatus();
+                          handleTwoFactorAuthToggle(e);
+                        }}
+                        disabled={isTotpStatusLoading || disablingTOTP || showTOTPSetup || showTOTPVerification || !!totpStatusError}
                       />
                     )}
                   </div>

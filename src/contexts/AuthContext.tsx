@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,45 +46,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isTotpStatusLoading, setIsTotpStatusLoading] = useState(false);
   const [totpError, setTotpError] = useState<Error | null>(null);
   const { toast } = useToast();
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    let isMounted = true;
+    
+    const initialize = async () => {
+      try {
+        // Set up auth state listener first
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, newSession) => {
+            if (!isMounted) return;
+            
+            console.log("Auth state changed:", event);
+            setSession(newSession);
+            setUser(newSession?.user ?? null);
+            setLoading(false);
+            
+            // Check TOTP status on auth change - using setTimeout to avoid deadlock
+            if (newSession?.user) {
+              setTimeout(() => {
+                if (isMounted) {
+                  checkTotpStatus().catch(error => {
+                    console.error("Error checking TOTP status on auth change:", error);
+                  });
+                }
+              }, 0);
+            } else {
+              setTotpEnabled(null);
+            }
+          }
+        );
+
+        // Then check for existing session
+        const { data } = await supabase.auth.getSession();
+        if (isMounted) {
+          setSession(data.session);
+          setUser(data.session?.user ?? null);
+          setLoading(false);
+          
+          // Check TOTP status if there's a session - using setTimeout to avoid deadlock
+          if (data.session?.user) {
+            setTimeout(() => {
+              if (isMounted) {
+                checkTotpStatus().catch(error => {
+                  console.error("Error checking initial TOTP status:", error);
+                });
+              }
+            }, 0);
+          }
+        }
         
-        // Check TOTP status on auth change
-        if (session?.user) {
-          setTimeout(() => {
-            checkTotpStatus().catch(error => {
-              console.error("Error checking TOTP status on auth change:", error);
-            });
-          }, 0);
-        } else {
-          setTotpEnabled(null);
+        if (isMounted) {
+          setAuthInitialized(true);
+        }
+
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        if (isMounted) {
+          setLoading(false);
+          setAuthInitialized(true);
         }
       }
-    );
+    };
 
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      
-      // Check TOTP status if there's a session
-      if (session?.user) {
-        setTimeout(() => {
-          checkTotpStatus().catch(error => {
-            console.error("Error checking initial TOTP status:", error);
-          });
-        }, 0);
-      }
-    });
+    initialize();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const resetTotpStatus = () => {
@@ -106,13 +138,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { data, error } = await withTimeout(
         statusPromise,
-        10000, // 10 second timeout
+        15000, // 15 second timeout
         "TOTP status check timed out. Please try again."
       );
       
       if (error) {
         console.error('Error checking TOTP status:', error);
         setTotpError(error);
+        // Keep previous state on error
         throw error;
       }
       
@@ -141,7 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { data, error } = await withTimeout(
         disablePromise,
-        10000, // 10 second timeout
+        15000, // 15 second timeout
         "TOTP disable operation timed out. Please try again."
       );
       
