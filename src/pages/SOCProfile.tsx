@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { socProfileData, getUpdatedLogTraffic } from '@/data/socProfileData';
@@ -16,6 +15,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent } from '@/components/ui/card';
 
 // Function to generate random log traffic based on connectors
 const generateLogTraffic = (connectors: number): number => {
@@ -280,60 +281,45 @@ const SOCProfile = () => {
           </div>
         </div>
         
-        <div className="glass rounded-lg p-4">
-          <h2 className="text-xl font-semibold mb-4">Command Center Details</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="text-lg font-medium mb-2">Microland Bengaluru SOC</h3>
-              <p className="text-cyber-gray-400 mb-4">
-                Central Security Operations Facility monitoring global traffic 24/7/365
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center">
-                  <span className="w-40 text-cyber-gray-500">Location:</span>
-                  <span>Bengaluru, India</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="w-40 text-cyber-gray-500">Operational Since:</span>
-                  <span>2015</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="w-40 text-cyber-gray-500">Staff:</span>
-                  <span>120+ Security Analysts</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="w-40 text-cyber-gray-500">Coverage:</span>
-                  <span>24/7/365</span>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium mb-2">Technologies</h3>
-              <ul className="space-y-2">
-                <li className="flex items-center">
-                  <span className="w-40 text-cyber-gray-500">SIEM:</span>
-                  <span>Advanced Correlation Engine</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="w-40 text-cyber-gray-500">EDR:</span>
-                  <span>Next-Gen Endpoint Detection</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="w-40 text-cyber-gray-500">SOAR:</span>
-                  <span>Automated Response Platform</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="w-40 text-cyber-gray-500">XDR:</span>
-                  <span>Extended Detection & Response</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="w-40 text-cyber-gray-500">AI/ML:</span>
-                  <span>Advanced Threat Prediction</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        <Card className="glass rounded-lg">
+          <CardContent className="p-4">
+            <h2 className="text-xl font-semibold mb-4">Command Center Details</h2>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">Parameter</TableHead>
+                  <TableHead>Details</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">Name</TableCell>
+                  <TableCell>Microland Bengaluru SOC</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Description</TableCell>
+                  <TableCell>Central Security Operations Facility monitoring global traffic 24/7/365</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Location</TableCell>
+                  <TableCell>Bengaluru, India</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Operational Since</TableCell>
+                  <TableCell>2015</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Staff</TableCell>
+                  <TableCell>120+ Security Analysts</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Coverage</TableCell>
+                  <TableCell>24/7/365</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
         <div className="glass rounded-lg p-4">
           <h2 className="text-xl font-semibold mb-4">Security Technology Stack</h2>
