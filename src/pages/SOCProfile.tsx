@@ -5,93 +5,133 @@ import { socProfileData, getUpdatedLogTraffic } from '@/data/socProfileData';
 import { RegionCountry } from '@/types/socProfile';
 import { RegionCard } from '@/components/soc-profile/RegionCard';
 import GlobalMap from '@/components/soc-profile/GlobalMap';
-import { Globe, Activity, Server, Plus, Minus } from 'lucide-react';
+import { Globe, Activity, Server, Plus, Minus, Info } from 'lucide-react';
 import MetricCard from '@/components/dashboard/MetricCard';
 import { Button } from '@/components/ui/button';
 import TechnologySection from '@/components/soc-profile/TechnologySection';
 import CommandCenterTable from '@/components/soc-profile/CommandCenterTable';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+// Function to generate random log traffic based on connectors
+const generateLogTraffic = (connectors: number): number => {
+  if (connectors <= 0) return 0;
+  return Math.round(connectors * (Math.random() * 90 + 10)); // Random value between 10 and 100 per connector
+};
 
 const SOCProfile = () => {
   const [selectedCountry, setSelectedCountry] = useState<RegionCountry | null>(null);
   const selectedRegionId = selectedCountry ? 
     socProfileData.regions.find(r => r.countries.some(c => c.id === selectedCountry.id))?.id : null;
   
-  // Create state for editable metrics
+  // Instead of separate metrics state, we'll track regional data and calculate totals
   const [monitoredRegions, setMonitoredRegions] = useState<number>(socProfileData.regions.length);
-  // Set total connectors to start from 2 as default
-  const [totalConnectors, setTotalConnectors] = useState<number>(2);
-  // Set global log traffic to start from 10 GB/day as default
-  const [totalLogTraffic, setTotalLogTraffic] = useState<number>(10);
   
-  // Custom state for regional connectors
-  const [regionalConnectors, setRegionalConnectors] = useState<{[key: string]: number}>({});
+  // State for regional data
+  const [regionData, setRegionData] = useState<{
+    id: string;
+    name: string;
+    connectors: number;
+    logTraffic: number;
+  }[]>(socProfileData.regions.map(region => ({
+    id: region.id,
+    name: region.name,
+    connectors: 0,
+    logTraffic: 0
+  })));
   
-  // Initialize regional connectors to match total
+  // Calculate totals from regional data
+  const totalConnectors = regionData.reduce((sum, region) => sum + region.connectors, 0);
+  const totalLogTraffic = regionData.reduce((sum, region) => sum + region.logTraffic, 0);
+  
+  // Initialize with 2 connectors distributed
   useEffect(() => {
-    // First set all to 0
-    const initialConnectors: {[key: string]: number} = {};
-    socProfileData.regions.forEach(region => {
-      initialConnectors[region.id] = 0;
-    });
-    
-    // Then distribute connectors to match the total
-    let remainingConnectors = totalConnectors;
-    const regionIds = socProfileData.regions.map(r => r.id);
-    
-    // Distribute connectors evenly starting from the first region
-    let index = 0;
-    while (remainingConnectors > 0) {
-      const regionId = regionIds[index % regionIds.length];
-      initialConnectors[regionId] += 1;
-      remainingConnectors -= 1;
-      index += 1;
+    if (totalConnectors === 0 && socProfileData.regions.length > 0) {
+      // Distribute 2 connectors to first two regions
+      const initialData = [...regionData];
+      if (initialData.length >= 1) initialData[0].connectors = 1;
+      if (initialData.length >= 2) initialData[1].connectors = 1;
+      
+      // Generate log traffic for regions with connectors
+      initialData.forEach(region => {
+        if (region.connectors > 0) {
+          region.logTraffic = generateLogTraffic(region.connectors);
+        }
+      });
+      
+      setRegionData(initialData);
+      
+      // Update the socProfileData regions for display
+      updateSocProfileData(initialData);
     }
-    
-    setRegionalConnectors(initialConnectors);
-  }, [totalConnectors]);
+  }, []);
   
-  // Calculate total log traffic based on connectors
-  useEffect(() => {
-    // Recalculate regional log traffic
-    const updatedRegions = socProfileData.regions.map(region => {
-      const connectors = regionalConnectors[region.id] || 0;
-      // If no connectors, log traffic should be 0
-      const logTraffic = connectors > 0 ? totalLogTraffic / monitoredRegions : 0;
+  // Function to update socProfileData with current region data
+  const updateSocProfileData = (data: typeof regionData) => {
+    socProfileData.regions = socProfileData.regions.map(region => {
+      const updatedRegion = data.find(r => r.id === region.id);
+      if (!updatedRegion) return region;
       
       return {
         ...region,
-        totalConnectors: connectors,
-        totalLogTraffic: logTraffic
+        totalConnectors: updatedRegion.connectors,
+        totalLogTraffic: updatedRegion.logTraffic
       };
     });
+  };
+  
+  // Handle adding a connector to a region
+  const addConnectorToRegion = (regionId: string) => {
+    const updatedData = regionData.map(region => {
+      if (region.id === regionId) {
+        const newConnectors = region.connectors + 1;
+        return {
+          ...region,
+          connectors: newConnectors,
+          logTraffic: generateLogTraffic(newConnectors)
+        };
+      }
+      return region;
+    });
     
-    // Update regions with new data
-    socProfileData.regions = updatedRegions;
-  }, [regionalConnectors, totalLogTraffic, monitoredRegions]);
+    setRegionData(updatedData);
+    updateSocProfileData(updatedData);
+  };
+  
+  // Handle removing a connector from a region
+  const removeConnectorFromRegion = (regionId: string) => {
+    const updatedData = regionData.map(region => {
+      if (region.id === regionId) {
+        const newConnectors = Math.max(0, region.connectors - 1);
+        return {
+          ...region,
+          connectors: newConnectors,
+          logTraffic: generateLogTraffic(newConnectors)
+        };
+      }
+      return region;
+    });
+    
+    setRegionData(updatedData);
+    updateSocProfileData(updatedData);
+  };
 
   const handleCountrySelect = (country: RegionCountry | null) => {
     setSelectedCountry(country);
   };
 
-  // Handlers for incrementing and decrementing metrics
-  const incrementMetric = (setter: React.Dispatch<React.SetStateAction<number>>, value: number) => {
-    // For log traffic, cap the maximum at 100 GB/day
-    if (setter === setTotalLogTraffic && value >= 100) {
-      return;
-    }
-    setter(value + 1);
+  // Increment and decrement for monitored regions
+  const incrementMonitoredRegions = () => {
+    setMonitoredRegions(prev => prev + 1);
   };
 
-  const decrementMetric = (setter: React.Dispatch<React.SetStateAction<number>>, value: number) => {
-    // For log traffic, don't go below 0.1 GB/day
-    if (setter === setTotalLogTraffic && value <= 0.1) {
-      return;
-    }
-    // For other metrics, don't go below 0
-    else if (value <= 0) {
-      return;
-    }
-    setter(value - 1);
+  const decrementMonitoredRegions = () => {
+    if (monitoredRegions <= 1) return;
+    setMonitoredRegions(prev => prev - 1);
   };
 
   return (
@@ -110,7 +150,7 @@ const SOCProfile = () => {
                 variant="ghost" 
                 size="icon" 
                 className="h-8 w-8" 
-                onClick={() => incrementMetric(setMonitoredRegions, monitoredRegions)}
+                onClick={incrementMonitoredRegions}
               >
                 <Plus size={16} />
               </Button>
@@ -118,8 +158,8 @@ const SOCProfile = () => {
                 variant="ghost" 
                 size="icon" 
                 className="h-8 w-8" 
-                onClick={() => decrementMetric(setMonitoredRegions, monitoredRegions)}
-                disabled={monitoredRegions <= 0}
+                onClick={decrementMonitoredRegions}
+                disabled={monitoredRegions <= 1}
               >
                 <Minus size={16} />
               </Button>
@@ -127,78 +167,106 @@ const SOCProfile = () => {
           </div>
           
           <div className="col-span-1 relative">
-            <MetricCard
-              title="Total Security Connectors"
-              value={totalConnectors.toLocaleString()}
-              icon={<Server size={24} />}
-              className="pr-16"
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8" 
-                onClick={() => incrementMetric(setTotalConnectors, totalConnectors)}
-              >
-                <Plus size={16} />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8" 
-                onClick={() => decrementMetric(setTotalConnectors, totalConnectors)}
-                disabled={totalConnectors <= 0}
-              >
-                <Minus size={16} />
-              </Button>
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="cursor-help">
+                    <MetricCard
+                      title="Total Security Connectors"
+                      value={totalConnectors.toLocaleString()}
+                      icon={<Server size={24} />}
+                      className="pr-16"
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="w-80 p-3">
+                  <p>Sum of all connectors across all regions. Add or remove connectors from each region to change this total.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           
           <div className="col-span-1 relative">
-            <MetricCard
-              title="Global Log Traffic"
-              value={`${totalLogTraffic.toLocaleString()} GB/day`}
-              icon={<Activity size={24} />}
-              className="pr-16"
-              change={{
-                value: "8.5%",
-                type: "increase"
-              }}
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8" 
-                onClick={() => incrementMetric(setTotalLogTraffic, totalLogTraffic)}
-                disabled={totalLogTraffic >= 100}
-              >
-                <Plus size={16} />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8" 
-                onClick={() => decrementMetric(setTotalLogTraffic, totalLogTraffic)}
-                disabled={totalLogTraffic <= 0.1}
-              >
-                <Minus size={16} />
-              </Button>
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="cursor-help">
+                    <MetricCard
+                      title="Global Log Traffic"
+                      value={`${totalLogTraffic.toLocaleString()} GB/day`}
+                      icon={<Activity size={24} />}
+                      className="pr-16"
+                      change={{
+                        value: "8.5%",
+                        type: "increase"
+                      }}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="w-80 p-3">
+                  <p>Aggregate log traffic (GB/day) from all regions. Each region with connectors generates between 10-100 GB/day per connector. Regions with no connectors generate no log traffic.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">
             <h2 className="text-xl font-semibold mb-4">Regional Log Data Pipe</h2>
-            {socProfileData.regions.map((region) => (
-              <RegionCard 
-                key={region.id}
-                region={region}
-                onCountrySelect={handleCountrySelect}
-                isSelected={region.id === selectedRegionId}
-              />
-            ))}
+            {regionData.map((region) => {
+              const socRegion = socProfileData.regions.find(r => r.id === region.id);
+              if (!socRegion) return null;
+              
+              return (
+                <div key={region.id} className="glass rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium flex items-center">
+                      <span style={{ color: socRegion.color }}>●</span>
+                      <span className="ml-2">{region.name}</span>
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => removeConnectorFromRegion(region.id)}
+                        disabled={region.connectors <= 0}
+                      >
+                        <Minus size={16} />
+                      </Button>
+                      <span className="font-medium">{region.connectors}</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => addConnectorToRegion(region.id)}
+                      >
+                        <Plus size={16} />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm text-cyber-gray-500">Connectors</span>
+                      <span className="text-base font-medium">{region.connectors}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-cyber-gray-500">Log Traffic</span>
+                      <span className="text-base font-medium animate-pulse">
+                        {region.logTraffic.toLocaleString()} GB/day
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <RegionCard 
+                    key={socRegion.id}
+                    region={socRegion}
+                    onCountrySelect={handleCountrySelect}
+                    isSelected={socRegion.id === selectedRegionId}
+                  />
+                </div>
+              );
+            })}
           </div>
           
           <div className="lg:col-span-2 glass rounded-lg p-4 h-[600px]">
