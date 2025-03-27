@@ -198,7 +198,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             <div className="flex items-center">
               <Cpu className="text-cyber-gray-500 w-3 h-3 mr-1.5 flex-shrink-0" />
               <span className="text-xs uppercase text-cyber-gray-500 tracking-wider truncate whitespace-nowrap">
-                cyber ai command
+                CYBERAI COMMAND
               </span>
             </div>
           </div>
