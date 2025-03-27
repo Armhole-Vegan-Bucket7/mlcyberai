@@ -106,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return data.enabled;
     } catch (error) {
       console.error('Error checking TOTP status:', error);
+      // Don't update state on error to maintain previous known state
       throw error;
     }
   };

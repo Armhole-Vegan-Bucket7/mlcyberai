@@ -192,12 +192,7 @@ const Settings = () => {
           setTwoFactorAuth(isEnabled);
         } catch (error: any) {
           console.error("Error checking initial TOTP status:", error);
-          setTotpStatusError("Unable to verify 2FA status. Please try again.");
-          toast({
-            title: "Error",
-            description: "Failed to check 2FA status. Please try again.",
-            variant: "destructive",
-          });
+          setTotpStatusError("Two-Factor Authentication is currently unavailable. Please try again later or contact support.");
         } finally {
           setCheckingTOTPStatus(false);
         }
@@ -242,17 +237,8 @@ const Settings = () => {
     try {
       await disableTotp();
       setTwoFactorAuth(false);
-      toast({
-        title: "2FA Disabled",
-        description: "Two-factor authentication has been successfully disabled for your account.",
-      });
     } catch (error: any) {
       console.error("Error disabling 2FA:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to disable two-factor authentication. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setDisablingTOTP(false);
     }
@@ -715,7 +701,14 @@ const Settings = () => {
                           disabled={disablingTOTP}
                         >
                           <ShieldX className="mr-2 h-4 w-4" />
-                          Disable Two-Factor Authentication
+                          {disablingTOTP ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Disabling...
+                            </>
+                          ) : (
+                            "Disable Two-Factor Authentication"
+                          )}
                         </Button>
                       </div>
                     </div>

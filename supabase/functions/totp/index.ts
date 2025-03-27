@@ -52,39 +52,129 @@ serve(async (req) => {
 
     // Handle different actions
     if (action === 'generate') {
-      // Generate a new TOTP secret
-      const secret = otplib.authenticator.generateSecret()
-      const otpauth = otplib.authenticator.keyuri(user.email || user.id, 'CyberShield', secret)
-      
-      return new Response(
-        JSON.stringify({ secret, otpauth }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      try {
+        // Generate a new TOTP secret
+        const secret = otplib.authenticator.generateSecret()
+        const otpauth = otplib.authenticator.keyuri(user.email || user.id, 'CyberShield', secret)
+        
+        return new Response(
+          JSON.stringify({ secret, otpauth }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (error) {
+        console.error('Error generating TOTP:', error)
+        return new Response(
+          JSON.stringify({ error: 'Could not generate TOTP secret' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     } 
     else if (action === 'verify') {
       const { secret, verificationCode } = body;
       
-      // Verify the provided code
-      const isValid = otplib.authenticator.verify({
-        token: verificationCode,
-        secret
-      });
+      try {
+        // Verify the provided code
+        const isValid = otplib.authenticator.verify({
+          token: verificationCode,
+          secret
+        });
+        
+        if (isValid) {
+          // If valid, save the secret to the user's profile
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ 
+              totp_secret: secret,
+              totp_enabled: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+          
+          if (updateError) {
+            console.error('Error saving TOTP secret:', updateError)
+            return new Response(
+              JSON.stringify({ error: 'Could not save TOTP secret' }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+          
+          return new Response(
+            JSON.stringify({ success: true }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } else {
+          return new Response(
+            JSON.stringify({ error: 'Invalid verification code' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      } catch (error) {
+        console.error('Error verifying TOTP:', error)
+        return new Response(
+          JSON.stringify({ error: 'Could not verify TOTP code' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } 
+    else if (action === 'validate') {
+      const { code } = body;
       
-      if (isValid) {
-        // If valid, save the secret to the user's profile
+      try {
+        // Get the user's TOTP secret
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('totp_secret, totp_enabled')
+          .eq('id', user.id)
+          .single()
+        
+        if (profileError || !profile) {
+          return new Response(
+            JSON.stringify({ error: 'Could not retrieve user profile' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        if (!profile.totp_enabled || !profile.totp_secret) {
+          return new Response(
+            JSON.stringify({ error: 'TOTP is not enabled for this user' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        // Verify the provided code against the stored secret
+        const isValid = otplib.authenticator.verify({ 
+          token: code, 
+          secret: profile.totp_secret 
+        });
+        
+        return new Response(
+          JSON.stringify({ valid: isValid }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (error) {
+        console.error('Error validating TOTP:', error)
+        return new Response(
+          JSON.stringify({ error: 'Could not validate TOTP code' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+    else if (action === 'disable') {
+      try {
+        // Disable TOTP for the user
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ 
-            totp_secret: secret,
-            totp_enabled: true,
+            totp_secret: null,
+            totp_enabled: false,
             updated_at: new Date().toISOString()
           })
           .eq('id', user.id)
         
         if (updateError) {
-          console.error('Error saving TOTP secret:', updateError)
+          console.error('Error disabling TOTP:', updateError)
           return new Response(
-            JSON.stringify({ error: 'Could not save TOTP secret' }),
+            JSON.stringify({ error: 'Could not disable TOTP' }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
@@ -93,92 +183,42 @@ serve(async (req) => {
           JSON.stringify({ success: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
-      } else {
-        return new Response(
-          JSON.stringify({ error: 'Invalid verification code' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    } 
-    else if (action === 'validate') {
-      const { code } = body;
-      
-      // Get the user's TOTP secret
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('totp_secret, totp_enabled')
-        .eq('id', user.id)
-        .single()
-      
-      if (profileError || !profile) {
-        return new Response(
-          JSON.stringify({ error: 'Could not retrieve user profile' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      
-      if (!profile.totp_enabled || !profile.totp_secret) {
-        return new Response(
-          JSON.stringify({ error: 'TOTP is not enabled for this user' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      
-      // Verify the provided code against the stored secret
-      const isValid = otplib.authenticator.verify({ 
-        token: code, 
-        secret: profile.totp_secret 
-      });
-      
-      return new Response(
-        JSON.stringify({ valid: isValid }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-    else if (action === 'disable') {
-      // Disable TOTP for the user
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          totp_secret: null,
-          totp_enabled: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-      
-      if (updateError) {
-        console.error('Error disabling TOTP:', updateError)
+      } catch (error) {
+        console.error('Error disabling TOTP:', error)
         return new Response(
           JSON.stringify({ error: 'Could not disable TOTP' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
-      
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
     }
     else if (action === 'status') {
-      // Get the current TOTP status for the user
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('totp_enabled')
-        .eq('id', user.id)
-        .single()
-      
-      if (profileError) {
-        console.error('Error getting TOTP status:', profileError)
+      try {
+        // Get the current TOTP status for the user
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('totp_enabled')
+          .eq('id', user.id)
+          .single()
+        
+        if (profileError) {
+          console.error('Error getting TOTP status:', profileError)
+          return new Response(
+            JSON.stringify({ error: 'Could not retrieve TOTP status' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
         return new Response(
-          JSON.stringify({ error: 'Could not retrieve TOTP status' }),
+          JSON.stringify({ enabled: profile?.totp_enabled || false }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (error) {
+        console.error('Error checking TOTP status:', error)
+        return new Response(
+          JSON.stringify({ error: 'Could not check TOTP status' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
-      
-      return new Response(
-        JSON.stringify({ enabled: profile?.totp_enabled || false }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
     }
     
     return new Response(

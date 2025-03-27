@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +33,25 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // Set up cleanup timeout for loading state
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (loading) {
+      // Auto-reset loading state after 10 seconds to prevent hanging UI
+      timer = setTimeout(() => {
+        if (loading) {
+          setLoading(false);
+          setError("Verification timed out. Please try again.");
+        }
+      }, 10000);
+    }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [loading]);
 
   // Verify the TOTP code provided by the user
   const verifyTOTP = async () => {
@@ -59,7 +78,7 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       
       if (error) {
         console.error('TOTP validation error:', error);
-        throw new Error(error.message || 'Failed to verify the code. Please try again.');
+        throw new Error("Failed to connect to authentication service. Please try again later.");
       }
       
       console.log("TOTP validation result:", data);
@@ -73,21 +92,11 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       } else {
         setError('Invalid verification code. Please try again.');
         setVerificationCode('');
-        toast({
-          title: "Verification Failed",
-          description: "Invalid verification code. Please try again.",
-          variant: "destructive",
-        });
       }
     } catch (err: any) {
       console.error('Error verifying TOTP:', err);
       setError(err.message || 'Failed to verify the code. Please try again.');
       setVerificationCode('');
-      toast({
-        title: "Error",
-        description: err.message || "Failed to verify the code. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }

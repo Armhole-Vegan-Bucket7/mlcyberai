@@ -41,6 +41,27 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
   const [step, setStep] = useState<'generate' | 'verify'>('generate');
   const [verifying, setVerifying] = useState(false);
   const [secretCopied, setSecretCopied] = useState(false);
+  const [setupFailed, setSetupFailed] = useState(false);
+
+  // Set up cleanup timeout for loading state
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (loading) {
+      // Auto-reset loading state after 10 seconds to prevent hanging UI
+      timer = setTimeout(() => {
+        if (loading) {
+          setLoading(false);
+          setSetupFailed(true);
+          setError("Operation timed out. Please try again later.");
+        }
+      }, 10000);
+    }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [loading]);
 
   // Generate a new TOTP secret and QR code
   const generateTOTP = async () => {
@@ -48,6 +69,7 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
     
     setLoading(true);
     setError(null);
+    setSetupFailed(false);
     
     try {
       console.log("Generating TOTP...");
@@ -59,10 +81,13 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
       const { data, error } = await withTimeout(
         generatePromise,
         10000, // 10 seconds timeout
-        "TOTP generation timed out"
+        "TOTP generation timed out. The service might be temporarily unavailable."
       );
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase Edge Function error:', error);
+        throw new Error("Failed to connect to authentication service. Please try again later.");
+      }
       
       console.log("TOTP generation result:", data);
       
@@ -96,11 +121,7 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
     } catch (err: any) {
       console.error('Error generating TOTP:', err);
       setError(err.message || 'Failed to generate TOTP secret. Please try again.');
-      toast({
-        title: "Error",
-        description: err.message || "Failed to setup 2FA. Please try again.",
-        variant: "destructive",
-      });
+      setSetupFailed(true);
     } finally {
       setLoading(false);
     }
@@ -127,10 +148,13 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
       const { data, error } = await withTimeout(
         verifyPromise,
         10000, // 10 seconds timeout
-        "TOTP verification timed out"
+        "TOTP verification timed out. Please try again."
       );
       
-      if (error) throw error;
+      if (error) {
+        console.error('Edge Function error:', error);
+        throw new Error("Failed to connect to authentication service. Please try again later.");
+      }
       
       console.log("TOTP verification result:", data);
       
@@ -143,20 +167,10 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
         if (onSuccess) onSuccess();
       } else if (data.error) {
         setError(data.error);
-        toast({
-          title: "Verification Failed",
-          description: data.error || "Failed to verify the code. Please try again.",
-          variant: "destructive",
-        });
       }
     } catch (err: any) {
       console.error('Error verifying TOTP:', err);
       setError(err.message || 'Failed to verify the code. Please make sure you entered the correct code from your authenticator app.');
-      toast({
-        title: "Error",
-        description: err.message || "Failed to verify the code. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setVerifying(false);
     }
@@ -190,11 +204,50 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
     }
   }, [session]);
 
+  // Retry setup
+  const handleRetrySetup = () => {
+    setSetupFailed(false);
+    generateTOTP();
+  };
+
+  if (setupFailed) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-500">
+            <AlertTriangle className="h-5 w-5" />
+            Setup Failed
+          </CardTitle>
+          <CardDescription>
+            We couldn't set up Two-Factor Authentication at this time
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {error || "Two-Factor Authentication is currently unavailable. Please try again later or contact support."}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button onClick={handleRetrySetup}>
+            Retry
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-2 text-sm text-muted-foreground">Generating your secure code...</p>
+        <p className="mt-2 text-sm text-muted-foreground">Setting up secure authentication...</p>
       </div>
     );
   }
