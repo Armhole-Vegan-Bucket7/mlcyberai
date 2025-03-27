@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -123,7 +122,7 @@ const BreachBoard = () => {
       // If we have the view data, transform it to the expected format
       return (data || []).map(item => ({
         name: item.attack_vector || 'Unknown',
-        value: parseInt(item.count) || 0,
+        value: typeof item.count === 'string' ? parseInt(item.count) : Number(item.count) || 0,
       }));
     }
   });
