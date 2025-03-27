@@ -116,7 +116,7 @@ const passwordFormSchema = z.object({
 
 const Settings = () => {
   const { selectedTenant } = useTenantContext();
-  const { user, signOut, totpEnabled, checkTotpStatus, disableTotp, isTotpStatusLoading } = useAuth();
+  const { user, signOut, totpEnabled, checkTotpStatus, disableTotp, isTotpStatusLoading, resetTotpStatus } = useAuth();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [darkModeAuto, setDarkModeAuto] = useState(true);
@@ -188,10 +188,23 @@ const Settings = () => {
   const handleTwoFactorAuthToggle = async (enabled: boolean) => {
     if (enabled === totpEnabled) return;
     
+    setTotpStatusError(null);
+    resetTotpStatus();
+    
     if (enabled) {
       setShowTOTPSetup(true);
     } else {
       setShowTOTPVerification(true);
+    }
+  };
+
+  const retryTotpStatus = async () => {
+    setTotpStatusError(null);
+    try {
+      await checkTotpStatus();
+    } catch (error: any) {
+      console.error("Error rechecking TOTP status:", error);
+      setTotpStatusError("Two-Factor Authentication is currently unavailable. Please try again later or contact support.");
     }
   };
 
@@ -625,9 +638,24 @@ const Settings = () => {
                           : "Add an additional layer of security to your account"}
                       </p>
                       {totpStatusError && (
-                        <p className="text-sm text-red-500 mt-1">
-                          {totpStatusError}
-                        </p>
+                        <div className="flex items-center mt-1">
+                          <p className="text-sm text-red-500 mr-2">
+                            {totpStatusError}
+                          </p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={retryTotpStatus} 
+                            disabled={isTotpStatusLoading}
+                          >
+                            {isTotpStatusLoading ? (
+                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            ) : (
+                              <ArrowRight className="h-3 w-3 mr-1" />
+                            )}
+                            Retry
+                          </Button>
+                        </div>
                       )}
                     </div>
                     {isTotpStatusLoading ? (
@@ -637,7 +665,7 @@ const Settings = () => {
                         id="two-factor"
                         checked={!!totpEnabled}
                         onCheckedChange={handleTwoFactorAuthToggle}
-                        disabled={isTotpStatusLoading || disablingTOTP || showTOTPSetup || showTOTPVerification || totpStatusError !== null}
+                        disabled={isTotpStatusLoading || disablingTOTP || showTOTPSetup || showTOTPVerification}
                       />
                     )}
                   </div>

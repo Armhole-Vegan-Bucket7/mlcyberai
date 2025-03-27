@@ -15,6 +15,7 @@ interface AuthContextType {
   checkTotpStatus: () => Promise<boolean>;
   disableTotp: () => Promise<void>;
   isTotpStatusLoading: boolean;
+  resetTotpStatus: () => void;
 }
 
 interface TOTPStatusResponse {
@@ -44,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
   const [isTotpStatusLoading, setIsTotpStatusLoading] = useState(false);
+  const [totpError, setTotpError] = useState<Error | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -86,11 +88,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
+  const resetTotpStatus = () => {
+    setTotpError(null);
+  };
+
   const checkTotpStatus = async (): Promise<boolean> => {
     if (!session) return false;
     
     console.log("Checking TOTP status...");
     setIsTotpStatusLoading(true);
+    setTotpError(null);
     
     try {
       const statusPromise = supabase.functions.invoke<TOTPStatusResponse>('totp', {
@@ -105,6 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Error checking TOTP status:', error);
+        setTotpError(error);
         throw error;
       }
       
@@ -113,6 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return data.enabled;
     } catch (error: any) {
       console.error('Error checking TOTP status:', error);
+      setTotpError(error);
       // Don't update state on error to maintain previous known state
       throw error;
     } finally {
@@ -235,6 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkTotpStatus,
     disableTotp,
     isTotpStatusLoading,
+    resetTotpStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
