@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -47,9 +48,9 @@ const SidebarItem = ({ icon, text, to, active }: SidebarItemProps) => {
     <Link
       to={to}
       className={cn(
-        "flex items-center py-2.5 px-4 rounded-lg transition-all duration-300",
+        "flex items-center py-2 px-4 rounded-lg transition-all duration-300",
         "hover:bg-cyber-blue/10 text-cyber-gray-600 dark:text-cyber-gray-300",
-        "transform hover:translate-x-1 text-sm",
+        "transform hover:translate-x-1 text-xs uppercase tracking-wide",
         active && "bg-cyber-blue/10 text-cyber-blue dark:text-cyber-blue font-medium"
       )}
     >
