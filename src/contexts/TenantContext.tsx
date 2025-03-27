@@ -1,6 +1,12 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { TENANTS } from '@/components/dashboard/TenantSelector';
+
+// Move TENANTS array from TenantSelector to here
+export const TENANTS = [
+  { id: '1', name: 'GlobalRoot' },
+  { id: '2', name: 'MLCyber Customer1' },
+  { id: '3', name: 'MLCyber Customer2' },
+];
 
 type Tenant = {
   id: string;

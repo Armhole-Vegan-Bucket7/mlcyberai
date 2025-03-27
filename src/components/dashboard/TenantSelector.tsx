@@ -1,15 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, ChevronDown, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenantContext, TENANTS } from '@/contexts/TenantContext';
 import { toast } from '@/components/ui/use-toast';
-
-export const TENANTS = [
-  { id: '1', name: 'GlobalRoot' },
-  { id: '2', name: 'MLCyber Customer1' },
-  { id: '3', name: 'MLCyber Customer2' },
-];
 
 export function TenantSelector() {
   const [isOpen, setIsOpen] = useState(false);
