@@ -49,6 +49,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import TOTPSetup from '@/components/auth/TOTPSetup';
+import TOTPVerification from '@/components/auth/TOTPVerification';
 
 // Define RACI role types
 type RaciRole = 'admin' | 'reader' | 'auditor' | 'customer' | 'ciso';
@@ -133,8 +134,10 @@ const Settings = () => {
   
   // State for 2FA
   const [showTOTPSetup, setShowTOTPSetup] = useState(false);
+  const [showTOTPVerification, setShowTOTPVerification] = useState(false);
   const [checkingTOTPStatus, setCheckingTOTPStatus] = useState(false);
   const [disablingTOTP, setDisablingTOTP] = useState(false);
+  const [totpStatusError, setTotpStatusError] = useState<string | null>(null);
 
   // Profile form
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -182,9 +185,17 @@ const Settings = () => {
     const checkTotp = async () => {
       if (user) {
         setCheckingTOTPStatus(true);
-        const isEnabled = await checkTotpStatus();
-        setTwoFactorAuth(isEnabled);
-        setCheckingTOTPStatus(false);
+        setTotpStatusError(null);
+        
+        try {
+          const isEnabled = await checkTotpStatus();
+          setTwoFactorAuth(isEnabled);
+        } catch (error: any) {
+          console.error("Error checking initial TOTP status:", error);
+          setTotpStatusError("Unable to verify 2FA status. Please try again.");
+        } finally {
+          setCheckingTOTPStatus(false);
+        }
       }
     };
     
@@ -197,36 +208,8 @@ const Settings = () => {
       // Show TOTP setup UI
       setShowTOTPSetup(true);
     } else {
-      // Disable TOTP
-      setDisablingTOTP(true);
-      try {
-        // Attempt to disable TOTP with a timeout
-        const disablePromise = disableTotp();
-        
-        // Set a timeout for the operation
-        const timeoutPromise = new Promise((_, reject) => {
-          const timer = setTimeout(() => {
-            clearTimeout(timer);
-            reject(new Error("Operation timed out. Please try again."));
-          }, 10000); // 10 seconds timeout
-        });
-        
-        // Race the promises
-        await Promise.race([disablePromise, timeoutPromise]);
-        
-        // If successful, update the UI state
-        setTwoFactorAuth(false);
-      } catch (error: any) {
-        console.error("Error disabling 2FA:", error);
-        // Show error toast
-        toast({
-          title: "Error",
-          description: error.message || "Failed to disable two-factor authentication. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setDisablingTOTP(false);
-      }
+      // Show verification before disabling
+      setShowTOTPVerification(true);
     }
   };
 
@@ -234,12 +217,45 @@ const Settings = () => {
   const handleTOTPSetupSuccess = () => {
     setShowTOTPSetup(false);
     setTwoFactorAuth(true);
-    checkTotpStatus();
+    toast({
+      title: "2FA Enabled",
+      description: "Two-factor authentication has been successfully enabled for your account.",
+    });
   };
 
   // Handle TOTP setup cancel
   const handleTOTPSetupCancel = () => {
     setShowTOTPSetup(false);
+  };
+
+  // Handle TOTP verification success for disabling
+  const handleTOTPVerificationSuccess = async () => {
+    setShowTOTPVerification(false);
+    
+    // Proceed with disabling TOTP
+    setDisablingTOTP(true);
+    try {
+      await disableTotp();
+      setTwoFactorAuth(false);
+      toast({
+        title: "2FA Disabled",
+        description: "Two-factor authentication has been successfully disabled for your account.",
+      });
+    } catch (error: any) {
+      console.error("Error disabling 2FA:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to disable two-factor authentication. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDisablingTOTP(false);
+    }
+  };
+
+  // Handle TOTP verification cancel
+  const handleTOTPVerificationCancel = () => {
+    setShowTOTPVerification(false);
   };
 
   // Handle profile picture upload
@@ -640,6 +656,11 @@ const Settings = () => {
                           ? "Your account is protected with two-factor authentication" 
                           : "Add an additional layer of security to your account"}
                       </p>
+                      {totpStatusError && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {totpStatusError}
+                        </p>
+                      )}
                     </div>
                     {checkingTOTPStatus ? (
                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -648,7 +669,7 @@ const Settings = () => {
                         id="two-factor"
                         checked={twoFactorAuth}
                         onCheckedChange={handleTwoFactorAuthToggle}
-                        disabled={disablingTOTP || showTOTPSetup}
+                        disabled={disablingTOTP || showTOTPSetup || showTOTPVerification}
                       />
                     )}
                   </div>
@@ -662,7 +683,16 @@ const Settings = () => {
                     </div>
                   )}
 
-                  {twoFactorAuth && !showTOTPSetup && (
+                  {showTOTPVerification && (
+                    <div className="mt-6 pt-4 border-t">
+                      <TOTPVerification 
+                        onSuccess={handleTOTPVerificationSuccess}
+                        onCancel={handleTOTPVerificationCancel}
+                      />
+                    </div>
+                  )}
+
+                  {twoFactorAuth && !showTOTPSetup && !showTOTPVerification && (
                     <div className="mt-4 pt-4 border-t">
                       <Alert className="bg-green-50 border-green-200">
                         <ShieldCheck className="h-4 w-4 text-green-500" />
@@ -673,38 +703,15 @@ const Settings = () => {
                       </Alert>
                       
                       <div className="mt-4">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50">
-                              <ShieldX className="mr-2 h-4 w-4" />
-                              Disable Two-Factor Authentication
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Disabling two-factor authentication will make your account less secure. You will no longer need an authenticator app to sign in.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleTwoFactorAuthToggle(false)}
-                                className="bg-red-500 hover:bg-red-600"
-                              >
-                                {disablingTOTP ? (
-                                  <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Disabling...
-                                  </>
-                                ) : (
-                                  'Disable 2FA'
-                                )}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button 
+                          variant="outline" 
+                          className="text-red-500 border-red-200 hover:bg-red-50"
+                          onClick={() => handleTwoFactorAuthToggle(false)}
+                          disabled={disablingTOTP}
+                        >
+                          <ShieldX className="mr-2 h-4 w-4" />
+                          Disable Two-Factor Authentication
+                        </Button>
                       </div>
                     </div>
                   )}

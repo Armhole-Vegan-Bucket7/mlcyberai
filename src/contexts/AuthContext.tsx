@@ -91,18 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { data, error } = await withTimeout(
         statusPromise,
-        15000, // 15 second timeout
-        "TOTP status check timed out. Please check your internet connection and try again."
+        10000, // 10 second timeout
+        "TOTP status check timed out. Please try again."
       );
       
       if (error) {
         console.error('Error checking TOTP status:', error);
-        toast({
-          title: "Error",
-          description: "Failed to check 2FA status. Please try again.",
-          variant: "destructive",
-        });
-        return false;
+        throw error;
       }
       
       console.log("TOTP status result:", data);
@@ -110,12 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return data.enabled;
     } catch (error) {
       console.error('Error checking TOTP status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to check 2FA status. Please try again.",
-        variant: "destructive",
-      });
-      return false;
+      throw error;
     }
   };
 
@@ -132,27 +122,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await withTimeout(
         disablePromise,
         10000, // 10 second timeout
-        "TOTP disable operation timed out"
+        "TOTP disable operation timed out. Please try again."
       );
       
       if (error) throw error;
       
       if (data.success) {
         setTotpEnabled(false);
-        toast({
-          title: "2FA Disabled",
-          description: "Two-factor authentication has been successfully disabled for your account.",
-        });
       } else if (data.error) {
         throw new Error(data.error);
       }
     } catch (error: any) {
       console.error('Error disabling TOTP:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to disable two-factor authentication",
-        variant: "destructive",
-      });
       throw error;
     }
   };

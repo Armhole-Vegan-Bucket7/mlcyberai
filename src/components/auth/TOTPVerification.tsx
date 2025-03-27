@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,8 +53,8 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       
       const { data, error } = await withTimeout(
         validatePromise,
-        15000, // 15 seconds timeout
-        "TOTP verification timed out. Please check your internet connection and try again."
+        10000, // 10 seconds timeout
+        "Verification timed out. Please check your internet connection and try again."
       );
       
       if (error) {
@@ -96,6 +96,7 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
   // Handle verification code change
   const handleVerificationCodeChange = (value: string) => {
     setVerificationCode(value);
+    setError(null);
     
     // Auto-submit when all 6 digits are entered
     if (value.length === 6) {
@@ -110,7 +111,7 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-primary" />
-          Two-Factor Authentication
+          Verify Your Identity
         </CardTitle>
         <CardDescription>
           Enter the 6-digit code from your authenticator app
@@ -130,6 +131,7 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
             maxLength={6}
             value={verificationCode}
             onChange={handleVerificationCodeChange}
+            disabled={loading}
           >
             <InputOTPGroup>
               <InputOTPSlot index={0} />
