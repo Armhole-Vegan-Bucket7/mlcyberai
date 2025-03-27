@@ -9,6 +9,66 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      breach_data: {
+        Row: {
+          attack_vector: string | null
+          breach_time: string | null
+          country: string | null
+          country_code: string | null
+          created_at: string | null
+          cve_description: string | null
+          cve_id: string | null
+          id: string
+          industry: string | null
+          latitude: number | null
+          longitude: number | null
+          organization: string
+          severity: string | null
+          source_country: string | null
+          source_ip: string | null
+          source_latitude: number | null
+          source_longitude: number | null
+        }
+        Insert: {
+          attack_vector?: string | null
+          breach_time?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          cve_description?: string | null
+          cve_id?: string | null
+          id?: string
+          industry?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          organization: string
+          severity?: string | null
+          source_country?: string | null
+          source_ip?: string | null
+          source_latitude?: number | null
+          source_longitude?: number | null
+        }
+        Update: {
+          attack_vector?: string | null
+          breach_time?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          cve_description?: string | null
+          cve_id?: string | null
+          id?: string
+          industry?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          organization?: string
+          severity?: string | null
+          source_country?: string | null
+          source_ip?: string | null
+          source_latitude?: number | null
+          source_longitude?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -44,7 +104,13 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      threat_vector_counts: {
+        Row: {
+          attack_vector: string | null
+          count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
