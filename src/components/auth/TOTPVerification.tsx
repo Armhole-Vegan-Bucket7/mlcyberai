@@ -53,11 +53,14 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       
       const { data, error } = await withTimeout(
         validatePromise,
-        10000, // 10 seconds timeout
-        "TOTP verification timed out"
+        15000, // 15 seconds timeout
+        "TOTP verification timed out. Please check your internet connection and try again."
       );
       
-      if (error) throw error;
+      if (error) {
+        console.error('TOTP validation error:', error);
+        throw new Error(error.message || 'Failed to verify the code. Please try again.');
+      }
       
       console.log("TOTP validation result:", data);
       

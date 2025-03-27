@@ -91,8 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { data, error } = await withTimeout(
         statusPromise,
-        10000, // 10 second timeout
-        "TOTP status check timed out"
+        15000, // 15 second timeout
+        "TOTP status check timed out. Please check your internet connection and try again."
       );
       
       if (error) {
