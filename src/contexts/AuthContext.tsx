@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +21,21 @@ interface TOTPStatusResponse {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Timeout utility function
+const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) => {
+    const id = setTimeout(() => {
+      clearTimeout(id);
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+
+  return Promise.race([
+    promise,
+    timeout
+  ]);
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -39,7 +53,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Check TOTP status on auth change
         if (session?.user) {
-          checkTotpStatus();
+          checkTotpStatus().catch(error => {
+            console.error("Error checking TOTP status on auth change:", error);
+          });
         } else {
           setTotpEnabled(null);
         }
@@ -54,7 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Check TOTP status if there's a session
       if (session?.user) {
-        checkTotpStatus();
+        checkTotpStatus().catch(error => {
+          console.error("Error checking initial TOTP status:", error);
+        });
       }
     });
 
@@ -65,19 +83,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!session) return false;
     
     try {
-      const { data, error } = await supabase.functions.invoke<TOTPStatusResponse>('totp', {
+      console.log("Checking TOTP status...");
+      
+      const statusPromise = supabase.functions.invoke<TOTPStatusResponse>('totp', {
         body: { action: 'status' },
       });
       
+      const { data, error } = await withTimeout(
+        statusPromise,
+        10000, // 10 second timeout
+        "TOTP status check timed out"
+      );
+      
       if (error) {
         console.error('Error checking TOTP status:', error);
+        toast({
+          title: "Error",
+          description: "Failed to check 2FA status. Please try again.",
+          variant: "destructive",
+        });
         return false;
       }
       
+      console.log("TOTP status result:", data);
       setTotpEnabled(data.enabled);
       return data.enabled;
     } catch (error) {
       console.error('Error checking TOTP status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to check 2FA status. Please try again.",
+        variant: "destructive",
+      });
       return false;
     }
   };
@@ -86,9 +123,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!session) return;
     
     try {
-      const { data, error } = await supabase.functions.invoke('totp', {
+      console.log("Disabling TOTP...");
+      
+      const disablePromise = supabase.functions.invoke('totp', {
         body: { action: 'disable' },
       });
+      
+      const { data, error } = await withTimeout(
+        disablePromise,
+        10000, // 10 second timeout
+        "TOTP disable operation timed out"
+      );
       
       if (error) throw error;
       
@@ -98,6 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: "2FA Disabled",
           description: "Two-factor authentication has been successfully disabled for your account.",
         });
+      } else if (data.error) {
+        throw new Error(data.error);
       }
     } catch (error: any) {
       console.error('Error disabling TOTP:', error);
@@ -106,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message || "Failed to disable two-factor authentication",
         variant: "destructive",
       });
+      throw error;
     }
   };
 

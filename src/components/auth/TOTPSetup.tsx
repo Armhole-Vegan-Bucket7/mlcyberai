@@ -5,15 +5,29 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Loader2, AlertTriangle, QrCode, Copy, CheckCircle, ArrowRight, ShieldCheck, ShieldX } from 'lucide-react';
+import { Loader2, AlertTriangle, Copy, CheckCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface TOTPSetupProps {
   onSuccess?: () => void;
   onCancel?: () => void;
 }
+
+// Timeout utility function
+const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) => {
+    const id = setTimeout(() => {
+      clearTimeout(id);
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+
+  return Promise.race([
+    promise,
+    timeout
+  ]);
+};
 
 const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
   const { session } = useAuth();
@@ -36,28 +50,57 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
     setError(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('totp', {
+      console.log("Generating TOTP...");
+      
+      const generatePromise = supabase.functions.invoke('totp', {
         body: { action: 'generate' },
       });
       
+      const { data, error } = await withTimeout(
+        generatePromise,
+        10000, // 10 seconds timeout
+        "TOTP generation timed out"
+      );
+      
       if (error) throw error;
+      
+      console.log("TOTP generation result:", data);
       
       if (data.secret && data.otpauth) {
         setSecret(data.secret);
         setOtpAuthUrl(data.otpauth);
         
-        // Generate QR code for the OTP Auth URL
-        const qrResponse = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.otpauth)}`);
-        if (qrResponse.ok) {
-          const qrBlob = await qrResponse.blob();
-          setQrCodeUrl(URL.createObjectURL(qrBlob));
+        try {
+          // Generate QR code for the OTP Auth URL
+          const qrResponse = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.otpauth)}`);
+          if (qrResponse.ok) {
+            const qrBlob = await qrResponse.blob();
+            setQrCodeUrl(URL.createObjectURL(qrBlob));
+          } else {
+            throw new Error("Failed to generate QR code");
+          }
+        } catch (qrError) {
+          console.error("QR code generation error:", qrError);
+          toast({
+            title: "QR Code Generation Failed",
+            description: "Unable to generate QR code. Please use the manual code instead.",
+            variant: "destructive",
+          });
+          // Continue despite QR error - user can use the secret key
         }
         
         setStep('verify');
+      } else {
+        throw new Error("Invalid response from server");
       }
     } catch (err: any) {
       console.error('Error generating TOTP:', err);
-      setError(err.message || 'Failed to generate TOTP secret');
+      setError(err.message || 'Failed to generate TOTP secret. Please try again.');
+      toast({
+        title: "Error",
+        description: err.message || "Failed to setup 2FA. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -71,7 +114,9 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
     setError(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('totp', {
+      console.log("Verifying TOTP code...");
+      
+      const verifyPromise = supabase.functions.invoke('totp', {
         body: { 
           action: 'verify',
           secret,
@@ -79,7 +124,15 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
         },
       });
       
+      const { data, error } = await withTimeout(
+        verifyPromise,
+        10000, // 10 seconds timeout
+        "TOTP verification timed out"
+      );
+      
       if (error) throw error;
+      
+      console.log("TOTP verification result:", data);
       
       if (data.success) {
         toast({
@@ -90,10 +143,20 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
         if (onSuccess) onSuccess();
       } else if (data.error) {
         setError(data.error);
+        toast({
+          title: "Verification Failed",
+          description: data.error || "Failed to verify the code. Please try again.",
+          variant: "destructive",
+        });
       }
     } catch (err: any) {
       console.error('Error verifying TOTP:', err);
       setError(err.message || 'Failed to verify the code. Please make sure you entered the correct code from your authenticator app.');
+      toast({
+        title: "Error",
+        description: err.message || "Failed to verify the code. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setVerifying(false);
     }
@@ -122,6 +185,7 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
   // Generate TOTP on component mount
   useEffect(() => {
     if (session) {
+      console.log("Session available, generating TOTP...");
       generateTOTP();
     }
   }, [session]);

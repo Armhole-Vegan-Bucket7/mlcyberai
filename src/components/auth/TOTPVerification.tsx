@@ -6,16 +6,33 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface TOTPVerificationProps {
   onSuccess: () => void;
   onCancel: () => void;
 }
 
+// Timeout utility function
+const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) => {
+    const id = setTimeout(() => {
+      clearTimeout(id);
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+
+  return Promise.race([
+    promise,
+    timeout
+  ]);
+};
+
 const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel }) => {
   const [verificationCode, setVerificationCode] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Verify the TOTP code provided by the user
   const verifyTOTP = async () => {
@@ -25,25 +42,49 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
     setError(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('totp', {
+      console.log("Verifying TOTP code:", verificationCode);
+      
+      const validatePromise = supabase.functions.invoke('totp', {
         body: { 
           action: 'validate',
           code: verificationCode
         },
       });
       
+      const { data, error } = await withTimeout(
+        validatePromise,
+        10000, // 10 seconds timeout
+        "TOTP verification timed out"
+      );
+      
       if (error) throw error;
       
+      console.log("TOTP validation result:", data);
+      
       if (data.valid) {
+        toast({
+          title: "Verification Successful",
+          description: "Your two-factor authentication code is valid.",
+        });
         onSuccess();
       } else {
         setError('Invalid verification code. Please try again.');
         setVerificationCode('');
+        toast({
+          title: "Verification Failed",
+          description: "Invalid verification code. Please try again.",
+          variant: "destructive",
+        });
       }
     } catch (err: any) {
       console.error('Error verifying TOTP:', err);
       setError(err.message || 'Failed to verify the code. Please try again.');
       setVerificationCode('');
+      toast({
+        title: "Error",
+        description: err.message || "Failed to verify the code. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

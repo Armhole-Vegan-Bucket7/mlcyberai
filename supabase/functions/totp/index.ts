@@ -1,7 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { authenticator } from 'https://esm.sh/otplib@12.0.1'
+import { totp } from 'https://esm.sh/otplib@12.0.1'
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -47,13 +47,14 @@ serve(async (req) => {
     }
 
     // Parse request
-    const { action, verificationCode } = await req.json()
+    const body = await req.json();
+    const { action } = body;
 
     // Handle different actions
     if (action === 'generate') {
       // Generate a new TOTP secret
-      const secret = authenticator.generateSecret()
-      const otpauth = authenticator.keyuri(user.email || user.id, 'CyberShield', secret)
+      const secret = totp.generateSecret()
+      const otpauth = totp.keyuri(user.email || user.id, 'CyberShield', secret)
       
       return new Response(
         JSON.stringify({ secret, otpauth }),
@@ -61,10 +62,13 @@ serve(async (req) => {
       )
     } 
     else if (action === 'verify') {
-      const { secret } = await req.json()
+      const { secret, verificationCode } = body;
       
       // Verify the provided code
-      const isValid = authenticator.verify({ token: verificationCode, secret })
+      const isValid = totp.verify({
+        token: verificationCode,
+        secret
+      });
       
       if (isValid) {
         // If valid, save the secret to the user's profile
@@ -97,7 +101,7 @@ serve(async (req) => {
       }
     } 
     else if (action === 'validate') {
-      const { code } = await req.json()
+      const { code } = body;
       
       // Get the user's TOTP secret
       const { data: profile, error: profileError } = await supabase
@@ -121,10 +125,10 @@ serve(async (req) => {
       }
       
       // Verify the provided code against the stored secret
-      const isValid = authenticator.verify({ 
+      const isValid = totp.verify({ 
         token: code, 
         secret: profile.totp_secret 
-      })
+      });
       
       return new Response(
         JSON.stringify({ valid: isValid }),
@@ -184,7 +188,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('TOTP function error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

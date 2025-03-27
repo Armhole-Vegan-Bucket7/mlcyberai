@@ -200,8 +200,30 @@ const Settings = () => {
       // Disable TOTP
       setDisablingTOTP(true);
       try {
-        await disableTotp();
+        // Attempt to disable TOTP with a timeout
+        const disablePromise = disableTotp();
+        
+        // Set a timeout for the operation
+        const timeoutPromise = new Promise((_, reject) => {
+          const timer = setTimeout(() => {
+            clearTimeout(timer);
+            reject(new Error("Operation timed out. Please try again."));
+          }, 10000); // 10 seconds timeout
+        });
+        
+        // Race the promises
+        await Promise.race([disablePromise, timeoutPromise]);
+        
+        // If successful, update the UI state
         setTwoFactorAuth(false);
+      } catch (error: any) {
+        console.error("Error disabling 2FA:", error);
+        // Show error toast
+        toast({
+          title: "Error",
+          description: error.message || "Failed to disable two-factor authentication. Please try again.",
+          variant: "destructive",
+        });
       } finally {
         setDisablingTOTP(false);
       }
