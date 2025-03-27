@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { socProfileData, getUpdatedLogTraffic } from '@/data/socProfileData';
 import { RegionCountry } from '@/types/socProfile';
@@ -21,6 +22,52 @@ const SOCProfile = () => {
   const [totalConnectors, setTotalConnectors] = useState<number>(2);
   // Set global log traffic to start from 10 GB/day as default
   const [totalLogTraffic, setTotalLogTraffic] = useState<number>(10);
+  
+  // Custom state for regional connectors
+  const [regionalConnectors, setRegionalConnectors] = useState<{[key: string]: number}>({});
+  
+  // Initialize regional connectors to match total
+  useEffect(() => {
+    // First set all to 0
+    const initialConnectors: {[key: string]: number} = {};
+    socProfileData.regions.forEach(region => {
+      initialConnectors[region.id] = 0;
+    });
+    
+    // Then distribute connectors to match the total
+    let remainingConnectors = totalConnectors;
+    const regionIds = socProfileData.regions.map(r => r.id);
+    
+    // Distribute connectors evenly starting from the first region
+    let index = 0;
+    while (remainingConnectors > 0) {
+      const regionId = regionIds[index % regionIds.length];
+      initialConnectors[regionId] += 1;
+      remainingConnectors -= 1;
+      index += 1;
+    }
+    
+    setRegionalConnectors(initialConnectors);
+  }, [totalConnectors]);
+  
+  // Calculate total log traffic based on connectors
+  useEffect(() => {
+    // Recalculate regional log traffic
+    const updatedRegions = socProfileData.regions.map(region => {
+      const connectors = regionalConnectors[region.id] || 0;
+      // If no connectors, log traffic should be 0
+      const logTraffic = connectors > 0 ? totalLogTraffic / monitoredRegions : 0;
+      
+      return {
+        ...region,
+        totalConnectors: connectors,
+        totalLogTraffic: logTraffic
+      };
+    });
+    
+    // Update regions with new data
+    socProfileData.regions = updatedRegions;
+  }, [regionalConnectors, totalLogTraffic, monitoredRegions]);
 
   const handleCountrySelect = (country: RegionCountry | null) => {
     setSelectedCountry(country);
@@ -143,7 +190,7 @@ const SOCProfile = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">
-            <h2 className="text-xl font-semibold mb-4">Regional Security Posture</h2>
+            <h2 className="text-xl font-semibold mb-4">Regional Log Data Pipe</h2>
             {socProfileData.regions.map((region) => (
               <RegionCard 
                 key={region.id}
