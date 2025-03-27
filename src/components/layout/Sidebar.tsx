@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -193,13 +192,9 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               <div className="flex items-center">
                 <Cpu className="text-cyber-purple w-6 h-6 mr-2" />
                 <h1 className="font-bold text-lg bg-gradient-to-r from-cyber-blue to-cyber-purple bg-clip-text text-transparent">
-                  Cyber AI Command Center
+                  Cyber AI Command
                 </h1>
-                <Badge variant="outline" className="ml-2 text-[9px] px-1 py-0 h-4 font-normal border-cyber-purple/40 text-cyber-purple">
-                  beta0.1
-                </Badge>
               </div>
-              <h2 className="text-xs text-muted-foreground ml-8">Data Platform</h2>
             </div>
           </div>
         )}
