@@ -25,17 +25,24 @@ import MaturityBenchmark from "./pages/governance/MaturityBenchmark";
 import BreachBoard from "./pages/governance/BreachBoard";
 import CustomerQBR from "./pages/governance/CustomerQBR";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+    <BrowserRouter>
       <ThemeProvider defaultTheme="system" storageKey="cyber-theme">
-        <AuthProvider>
-          <TenantProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+        <TooltipProvider>
+          <AuthProvider>
+            <TenantProvider>
+              <Toaster />
+              <Sonner />
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
@@ -55,11 +62,11 @@ const App = () => (
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </TenantProvider>
-        </AuthProvider>
+            </TenantProvider>
+          </AuthProvider>
+        </TooltipProvider>
       </ThemeProvider>
-    </TooltipProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 

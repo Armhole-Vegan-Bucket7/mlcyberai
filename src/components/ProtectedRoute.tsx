@@ -8,20 +8,26 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  try {
+    const { user, loading } = useAuth();
 
-  // Show loading state while checking authentication
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
+    // Show loading state while checking authentication
+    if (loading) {
+      return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    }
 
-  // Redirect to auth page if not authenticated
-  if (!user) {
+    // Redirect to auth page if not authenticated
+    if (!user) {
+      return <Navigate to="/auth" replace />;
+    }
+
+    // Render children if authenticated
+    return <>{children}</>;
+  } catch (error) {
+    // If the auth context isn't available yet, redirect to auth
+    console.error("Auth context not available:", error);
     return <Navigate to="/auth" replace />;
   }
-
-  // Render children if authenticated
-  return <>{children}</>;
 };
 
 export default ProtectedRoute;
