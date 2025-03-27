@@ -3,10 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle
+} from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface TOTPVerificationProps {
@@ -14,31 +21,18 @@ interface TOTPVerificationProps {
   onCancel: () => void;
 }
 
-// Timeout utility function
-const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
-  const timeout = new Promise<never>((_, reject) => {
-    const id = setTimeout(() => {
-      clearTimeout(id);
-      reject(new Error(errorMessage));
-    }, timeoutMs);
-  });
-
-  return Promise.race([
-    promise,
-    timeout
-  ]);
-};
-
 const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel }) => {
   const { session } = useAuth();
+  const { toast } = useToast();
   const [verificationCode, setVerificationCode] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [verificationFailed, setVerificationFailed] = useState(false);
-  const { toast } = useToast();
+  const [attemptsLeft, setAttemptsLeft] = useState(3);
+  const [lockoutTime, setLockoutTime] = useState<number | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
-  
-  // Set up cleanup timeout for loading state
+
+  // Set up cleanup for loading state
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
@@ -47,8 +41,7 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       timer = setTimeout(() => {
         if (loading) {
           setLoading(false);
-          setError("Verification timed out. The authentication service might be unavailable. Please try again later.");
-          setVerificationFailed(true);
+          setError("Verification timed out. Please try again.");
           
           // Abort any pending fetch requests
           if (abortController) {
@@ -63,8 +56,27 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
     };
   }, [loading, abortController]);
 
+  // Countdown timer for lockout
   useEffect(() => {
-    // Cleanup resources when component unmounts
+    if (!lockoutTime) return;
+    
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (now >= lockoutTime) {
+        setLockoutTime(null);
+        setAttemptsLeft(3);
+        clearInterval(interval);
+      } else {
+        // Force re-render
+        setLockoutTime(lockoutTime);
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [lockoutTime]);
+
+  // Cleanup when unmounting
+  useEffect(() => {
     return () => {
       if (abortController) {
         abortController.abort();
@@ -72,81 +84,58 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
     };
   }, [abortController]);
 
-  // Verify the TOTP code provided by the user
   const verifyTOTP = async () => {
-    if (!session) {
-      setError("Authentication session not found. Please sign in again.");
-      setVerificationFailed(true);
-      return;
-    }
+    if (!session || !verificationCode) return;
     
-    if (!verificationCode || verificationCode.length !== 6) return;
+    // If locked out, don't allow verification
+    if (lockoutTime && Date.now() < lockoutTime) return;
     
-    // Create a new abort controller for this request
     const controller = new AbortController();
     setAbortController(controller);
-    
-    setLoading(true);
+    setVerifying(true);
     setError(null);
-    setVerificationFailed(false);
     
     try {
-      console.log("Verifying TOTP code:", verificationCode);
-      
-      const validatePromise = supabase.functions.invoke('totp', {
+      const { data, error } = await supabase.functions.invoke('totp', {
         body: { 
           action: 'validate',
           code: verificationCode
         },
-        signal: controller.signal,
         headers: {
           Authorization: `Bearer ${session.access_token}`
         }
       });
       
-      const { data, error } = await withTimeout(
-        validatePromise,
-        12000, // 12 seconds timeout
-        "Verification timed out. Please check your internet connection and try again."
-      );
-      
-      if (error) {
-        console.error('TOTP validation error:', error);
-        throw new Error(error.message || "We're unable to connect to the authentication service. Please try again shortly.");
-      }
-      
-      console.log("TOTP validation result:", data);
-      
-      if (data.error) {
-        throw new Error(data.error || "Verification failed. Please try again.");
-      }
+      if (error) throw error;
       
       if (data.valid) {
         toast({
           title: "Verification Successful",
-          description: "Your two-factor authentication code is valid.",
+          description: "Two-factor authentication verified successfully.",
         });
-        onSuccess();
+        
+        if (onSuccess) onSuccess();
       } else {
-        setError('Invalid verification code. Please try again.');
+        // Decrease attempts left
+        const newAttemptsLeft = attemptsLeft - 1;
+        setAttemptsLeft(newAttemptsLeft);
+        
+        if (newAttemptsLeft <= 0) {
+          // Set lockout for 30 seconds
+          setLockoutTime(Date.now() + 30000);
+          setError("Too many failed attempts. Please try again in 30 seconds.");
+        } else {
+          setError(`Invalid verification code. ${newAttemptsLeft} attempts remaining.`);
+        }
+        
         setVerificationCode('');
       }
     } catch (err: any) {
-      // Skip setting error if request was aborted intentionally
-      if (err.name === 'AbortError') {
-        console.log('Request was aborted');
-        return;
-      }
-      
-      console.error('Error verifying TOTP:', err);
-      setError(err.message || 'Failed to verify the code. Please try again.');
+      console.error('Error validating TOTP:', err);
+      setError(err.message || "Failed to verify code. Please try again.");
       setVerificationCode('');
-      
-      if (err.message.includes("timeout") || err.message.includes("connect")) {
-        setVerificationFailed(true);
-      }
     } finally {
-      setLoading(false);
+      setVerifying(false);
       setAbortController(null);
     }
   };
@@ -154,105 +143,92 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
   // Handle verification code change
   const handleVerificationCodeChange = (value: string) => {
     setVerificationCode(value);
-    setError(null);
     
-    // Auto-submit when all 6 digits are entered
-    if (value.length === 6) {
+    // Auto-submit when code is complete
+    if (value.length === 6 && !verifying) {
+      setVerificationCode(value);
       setTimeout(() => {
         verifyTOTP();
       }, 300);
     }
   };
 
-  if (verificationFailed) {
-    return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-500">
-            <AlertTriangle className="h-5 w-5" />
-            Verification Failed
-          </CardTitle>
-          <CardDescription>
-            We couldn't verify your two-factor authentication code
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="destructive" className="mb-4">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>
-              {error || "The authentication service is currently unavailable. Please try again later."}
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button onClick={() => {
-            setVerificationFailed(false);
-            setVerificationCode('');
-          }}>
-            Try Again
-          </Button>
-        </CardFooter>
-      </Card>
-    );
-  }
+  // Calculate and format lockout time remaining
+  const getLockoutTimeRemaining = () => {
+    if (!lockoutTime) return '';
+    
+    const remainingMs = Math.max(0, lockoutTime - Date.now());
+    const seconds = Math.ceil(remainingMs / 1000);
+    
+    return `${seconds}s`;
+  };
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-primary" />
-          Verify Your Identity
-        </CardTitle>
+        <CardTitle>Verify Two-Factor Authentication</CardTitle>
         <CardDescription>
           Enter the 6-digit code from your authenticator app
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
-          <Alert variant="destructive" className="mb-4">
+          <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
         
-        <div className="flex justify-center py-4">
-          <InputOTP 
-            maxLength={6}
-            value={verificationCode}
-            onChange={handleVerificationCodeChange}
-            disabled={loading}
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
-            </InputOTPGroup>
-          </InputOTP>
+        <div className="space-y-2">
+          <div className="flex justify-center">
+            <InputOTP 
+              maxLength={6}
+              value={verificationCode}
+              onChange={handleVerificationCodeChange}
+              disabled={verifying || (lockoutTime !== null && Date.now() < lockoutTime)}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+          
+          {lockoutTime !== null && Date.now() < lockoutTime && (
+            <p className="text-center text-sm text-muted-foreground mt-2">
+              Try again in {getLockoutTimeRemaining()}
+            </p>
+          )}
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={onCancel} disabled={loading}>
+        <Button variant="outline" onClick={onCancel} disabled={verifying}>
           Cancel
         </Button>
         <Button 
           onClick={verifyTOTP} 
-          disabled={verificationCode.length !== 6 || loading}
+          disabled={
+            verificationCode.length !== 6 || 
+            verifying || 
+            (lockoutTime !== null && Date.now() < lockoutTime)
+          }
+          className="flex items-center gap-2"
         >
-          {loading ? (
+          {verifying ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Verifying...
             </>
           ) : (
-            'Verify'
+            <>
+              Verify
+              <ArrowRight className="h-4 w-4" />
+            </>
           )}
         </Button>
       </CardFooter>

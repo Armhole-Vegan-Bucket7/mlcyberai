@@ -103,7 +103,6 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
       
       const generatePromise = supabase.functions.invoke('totp', {
         body: { action: 'generate' },
-        signal: controller.signal,
         headers: {
           Authorization: `Bearer ${session.access_token}`
         }
@@ -132,9 +131,7 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
         
         try {
           // Generate QR code for the OTP Auth URL
-          const qrResponse = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.otpauth)}`, {
-            signal: controller.signal,
-          });
+          const qrResponse = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.otpauth)}`);
           
           if (qrResponse.ok) {
             const qrBlob = await qrResponse.blob();
@@ -204,7 +201,6 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
           secret,
           verificationCode
         },
-        signal: controller.signal,
         headers: {
           Authorization: `Bearer ${session.access_token}`
         }
