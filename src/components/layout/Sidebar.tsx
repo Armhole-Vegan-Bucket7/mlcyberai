@@ -48,9 +48,9 @@ const SidebarItem = ({ icon, text, to, active }: SidebarItemProps) => {
     <Link
       to={to}
       className={cn(
-        "flex items-center py-3 px-4 rounded-lg transition-all duration-300",
+        "flex items-center py-2.5 px-4 rounded-lg transition-all duration-300",
         "hover:bg-cyber-blue/10 text-cyber-gray-600 dark:text-cyber-gray-300",
-        "transform hover:translate-x-1",
+        "transform hover:translate-x-1 text-sm",
         active && "bg-cyber-blue/10 text-cyber-blue dark:text-cyber-blue font-medium"
       )}
     >
@@ -192,14 +192,14 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             <div className="flex flex-col space-y-1">
               <div className="flex items-center">
                 <Cpu className="text-cyber-purple w-6 h-6 mr-2" />
-                <h1 className="font-bold text-xl bg-gradient-to-r from-cyber-blue to-cyber-purple bg-clip-text text-transparent">
+                <h1 className="font-bold text-lg bg-gradient-to-r from-cyber-blue to-cyber-purple bg-clip-text text-transparent">
                   Microland Cyber AI
                 </h1>
                 <Badge variant="outline" className="ml-2 text-[9px] px-1 py-0 h-4 font-normal border-cyber-purple/40 text-cyber-purple">
                   beta0.1
                 </Badge>
               </div>
-              <h2 className="text-sm text-muted-foreground ml-8">Data Platform</h2>
+              <h2 className="text-xs text-muted-foreground ml-8">Data Platform</h2>
             </div>
           </div>
         )}

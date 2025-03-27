@@ -48,13 +48,13 @@
   }
 
   .dark {
-    --background: 222 47% 11%;
+    --background: 217 33% 17%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 11%;
+    --card: 217 33% 17%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 11%;
+    --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 210 100% 50%;
@@ -76,7 +76,7 @@
     --input: 217 33% 18%;
     --ring: 213 27% 84%;
     
-    --sidebar-background: 222 47% 11%;
+    --sidebar-background: 217 33% 17%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 210 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -93,7 +93,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 text-sm;
   }
   
   /* Custom scrollbar */

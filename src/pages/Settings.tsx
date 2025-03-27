@@ -14,6 +14,7 @@ import { useTenantContext } from '@/contexts/TenantContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import PlatformIntegrations from '@/components/settings/PlatformIntegrations';
+import ThemeSelector from '@/components/settings/ThemeSelector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -292,8 +293,8 @@ const Settings = () => {
     <PageLayout>
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
         <div className="page-transition">
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-cyber-gray-500 mt-1">
+          <h1 className="text-2xl font-bold">Settings</h1>
+          <p className="text-sm text-cyber-gray-500 mt-1">
             Manage your preferences for {selectedTenant.name}
           </p>
         </div>
@@ -301,12 +302,12 @@ const Settings = () => {
 
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="mb-6">
-          <TabsTrigger value="profile">My Profile</TabsTrigger>
-          <TabsTrigger value="preferences">Preferences</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="user-roles">User Roles (RACI)</TabsTrigger>
-          <TabsTrigger value="integrations">Platform Integrations</TabsTrigger>
-          <TabsTrigger value="api">API Access</TabsTrigger>
+          <TabsTrigger value="profile" className="text-sm">My Profile</TabsTrigger>
+          <TabsTrigger value="preferences" className="text-sm">Preferences</TabsTrigger>
+          <TabsTrigger value="security" className="text-sm">Security</TabsTrigger>
+          <TabsTrigger value="user-roles" className="text-sm">User Roles (RACI)</TabsTrigger>
+          <TabsTrigger value="integrations" className="text-sm">Platform Integrations</TabsTrigger>
+          <TabsTrigger value="api" className="text-sm">API Access</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
@@ -569,9 +570,11 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="preferences" className="space-y-4">
+          <ThemeSelector />
+          
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base">
                 <Bell className="h-5 w-5" />
                 Notification Settings
               </CardTitle>
@@ -582,8 +585,8 @@ const Settings = () => {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="email-notifications">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <Label htmlFor="email-notifications" className="text-sm">Email Notifications</Label>
+                  <p className="text-xs text-muted-foreground">
                     Receive security alerts via email
                   </p>
                 </div>
@@ -596,8 +599,8 @@ const Settings = () => {
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="sms-notifications">SMS Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <Label htmlFor="sms-notifications" className="text-sm">SMS Notifications</Label>
+                  <p className="text-xs text-muted-foreground">
                     Receive critical alerts via SMS
                   </p>
                 </div>
@@ -609,37 +612,7 @@ const Settings = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSavePreferences}>Save Notification Settings</Button>
-            </CardFooter>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Moon className="h-5 w-5" />
-                Display Settings
-              </CardTitle>
-              <CardDescription>
-                Configure display and theme settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="dark-mode">Automatic Dark Mode</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Switch between light and dark themes based on system settings
-                  </p>
-                </div>
-                <Switch
-                  id="dark-mode"
-                  checked={darkModeAuto}
-                  onCheckedChange={setDarkModeAuto}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSavePreferences}>Save Display Settings</Button>
+              <Button onClick={handleSavePreferences} size="sm" className="text-sm">Save Notification Settings</Button>
             </CardFooter>
           </Card>
         </TabsContent>
