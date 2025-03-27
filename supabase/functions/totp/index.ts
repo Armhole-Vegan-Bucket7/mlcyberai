@@ -1,7 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { authenticator } from 'https://esm.sh/otpauth@9.1.5'
+import * as OTPAuth from 'https://esm.sh/otpauth@9.1.5'
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -61,13 +61,13 @@ serve(async (req) => {
         const label = user.email || user.id;
         
         // Create a new TOTP object
-        const totp = new authenticator.TOTP({
+        const totp = new OTPAuth.TOTP({
           issuer: issuer,
           label: label,
           algorithm: 'SHA1',
           digits: 6,
           period: 30,
-          secret: authenticator.Secret.fromBase32(secret)
+          secret: OTPAuth.Secret.fromBase32(secret)
         });
         
         // Get the otpauth URL for QR code generation
@@ -103,13 +103,13 @@ serve(async (req) => {
       
       try {
         // Create a TOTP object with the provided secret
-        const totp = new authenticator.TOTP({
+        const totp = new OTPAuth.TOTP({
           issuer: 'CyberShield',
           label: user.email || user.id,
           algorithm: 'SHA1',
           digits: 6,
           period: 30,
-          secret: authenticator.Secret.fromBase32(secret)
+          secret: OTPAuth.Secret.fromBase32(secret)
         });
         
         // Verify the provided code
@@ -193,13 +193,13 @@ serve(async (req) => {
         }
         
         // Create a TOTP object with the stored secret
-        const totp = new authenticator.TOTP({
+        const totp = new OTPAuth.TOTP({
           issuer: 'CyberShield',
           label: user.email || user.id,
           algorithm: 'SHA1',
           digits: 6,
           period: 30,
-          secret: authenticator.Secret.fromBase32(profile.totp_secret)
+          secret: OTPAuth.Secret.fromBase32(profile.totp_secret)
         });
         
         // Verify the provided code
