@@ -87,7 +87,7 @@ export function ThreatActivityTable({ events, className }: ThreatActivityTablePr
                   className="hover:bg-cyber-gray-50/50 dark:hover:bg-cyber-gray-800/30 transition-colors text-sm"
                 >
                   <td className="py-2.5 text-cyber-gray-500 whitespace-nowrap">
-                    {event.timestamp}
+                    {formatTimestamp(event.timestamp, 'MMM d, yyyy HH:mm')}
                   </td>
                   <td className="py-2.5">
                     <div className="flex items-center">
@@ -139,7 +139,7 @@ export function ThreatActivityTable({ events, className }: ThreatActivityTablePr
                 </div>
                 <div>
                   <h4 className="text-xs font-medium text-muted-foreground mb-1">Timestamp</h4>
-                  <p>{selectedEvent.timestamp}</p>
+                  <p>{formatTimestamp(selectedEvent.timestamp, 'MMM d, yyyy HH:mm')}</p>
                 </div>
                 <div>
                   <h4 className="text-xs font-medium text-muted-foreground mb-1">Event Type</h4>

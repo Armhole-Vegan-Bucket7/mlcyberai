@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import MetricCard from '@/components/dashboard/MetricCard';
@@ -6,7 +7,7 @@ import ChartCard from '@/components/dashboard/ChartCard';
 import ThreatActivityTable from '@/components/dashboard/ThreatActivityTable';
 import MetricsSearch from '@/components/dashboard/MetricsSearch';
 import { Shield, AlertCircle, Bug, Clock, Users, Server } from 'lucide-react';
-import { format, addYears, addMonths } from 'date-fns';
+import { format, addYears, addMonths, subDays } from 'date-fns';
 import { getRecentTimestamp } from '@/utils/dateUtils';
 
 // Lazy load the D3 visualizations
@@ -37,11 +38,20 @@ const threatData = [
   { name: 'Identity', value: 13 },
 ];
 
+// Generate a March 2025 date
+const getMarch2025Date = (daysAgo = 0, hoursAgo = 0) => {
+  // Base: March 15, 2025
+  const baseDate = new Date(2025, 2, 15); // Month is 0-indexed, so 2 = March
+  return new Date(
+    baseDate.getTime() - (daysAgo * 24 * 60 * 60 * 1000) - (hoursAgo * 60 * 60 * 1000)
+  );
+};
+
 // Updated threat events with March 2025 timestamps
 const threatEvents = [
   {
     id: '1',
-    timestamp: format(new Date(getRecentTimestamp(0, 2)), 'yyyy-MM-dd HH:mm:ss'),
+    timestamp: getMarch2025Date(0, 2).toISOString(),
     eventType: 'incident' as const,
     severity: 'critical' as const,
     source: 'Sentinel',
@@ -49,7 +59,7 @@ const threatEvents = [
   },
   {
     id: '2',
-    timestamp: format(new Date(getRecentTimestamp(0, 3)), 'yyyy-MM-dd HH:mm:ss'),
+    timestamp: getMarch2025Date(0, 3).toISOString(),
     eventType: 'alert' as const,
     severity: 'high' as const,
     source: 'Crowdstrike',
@@ -57,7 +67,7 @@ const threatEvents = [
   },
   {
     id: '3',
-    timestamp: format(new Date(getRecentTimestamp(0, 4)), 'yyyy-MM-dd HH:mm:ss'),
+    timestamp: getMarch2025Date(0, 4).toISOString(),
     eventType: 'detection' as const,
     severity: 'medium' as const,
     source: 'Defender',
@@ -65,7 +75,7 @@ const threatEvents = [
   },
   {
     id: '4',
-    timestamp: format(new Date(getRecentTimestamp(0, 6)), 'yyyy-MM-dd HH:mm:ss'),
+    timestamp: getMarch2025Date(0, 6).toISOString(),
     eventType: 'alert' as const,
     severity: 'medium' as const,
     source: 'Sentinel',
@@ -73,7 +83,7 @@ const threatEvents = [
   },
   {
     id: '5',
-    timestamp: format(new Date(getRecentTimestamp(0, 8)), 'yyyy-MM-dd HH:mm:ss'),
+    timestamp: getMarch2025Date(0, 8).toISOString(),
     eventType: 'detection' as const,
     severity: 'low' as const,
     source: 'Defender',
@@ -88,8 +98,8 @@ const Index = () => {
   useEffect(() => {
     // Function to update the current date and time to show March 2025
     const updateDateTime = () => {
-      // Base date: March 2025
-      const now = addYears(addMonths(new Date(), 10), 1);
+      // March 2025
+      const now = new Date(2025, 2, 27); // March 27, 2025
       setCurrentDateTime(format(now, 'MMMM d, yyyy HH:mm') + ' UTC');
     };
     
