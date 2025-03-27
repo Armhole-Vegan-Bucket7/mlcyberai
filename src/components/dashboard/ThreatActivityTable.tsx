@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { formatTimestamp } from '@/utils/dateUtils';
 
 interface ThreatEvent {
   id: string;
