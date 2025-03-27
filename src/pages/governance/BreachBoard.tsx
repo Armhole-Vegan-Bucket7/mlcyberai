@@ -90,15 +90,37 @@ const BreachBoard = () => {
   } = useQuery({
     queryKey: ['threat-vectors'],
     queryFn: async () => {
+      // Instead of using a non-existent 'group' method, we'll use the threat_vector_counts view
+      // or fetch all data and group it on the client side
       const { data, error } = await supabase
-        .from('realtime_threats')
-        .select('attack_vector, count(*)')
-        .not('attack_vector', 'is', null)
-        .group('attack_vector')
-        .order('count', { ascending: false });
-        
-      if (error) throw error;
+        .from('threat_vector_counts')
+        .select('attack_vector, count');
       
+      if (error) {
+        console.error('Error fetching vector counts:', error);
+        
+        // Fallback: fetch all data and manually group it
+        const { data: allThreats, error: threatsError } = await supabase
+          .from('realtime_threats')
+          .select('attack_vector');
+          
+        if (threatsError) throw threatsError;
+        
+        // Group by attack_vector and count occurrences
+        const vectorCounts = {};
+        (allThreats || []).forEach(threat => {
+          const vector = threat.attack_vector || 'Unknown';
+          vectorCounts[vector] = (vectorCounts[vector] || 0) + 1;
+        });
+        
+        // Convert to required format
+        return Object.entries(vectorCounts).map(([name, count]) => ({
+          name: name,
+          value: count as number,
+        })).sort((a, b) => b.value - a.value);
+      }
+      
+      // If we have the view data, transform it to the expected format
       return (data || []).map(item => ({
         name: item.attack_vector || 'Unknown',
         value: parseInt(item.count) || 0,
@@ -200,6 +222,15 @@ const BreachBoard = () => {
       });
     }, 2000);
   };
+
+  // Set up auto-refresh every 10 minutes (600000 ms)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchBreachIntel();
+    }, 600000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <PageLayout 
