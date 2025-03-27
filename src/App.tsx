@@ -17,6 +17,7 @@ import Incidents from "./pages/Incidents";
 import Vulnerabilities from "./pages/Vulnerabilities";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Connectors from "./pages/system/Connectors";
 
 // Import governance pages
 import Compliance from "./pages/governance/Compliance";
@@ -44,6 +45,7 @@ const App = () => (
                 <Route path="/vulnerabilities" element={<ProtectedRoute><Vulnerabilities /></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/system/connectors" element={<ProtectedRoute><Connectors /></ProtectedRoute>} />
                 
                 {/* Governance Routes */}
                 <Route path="/governance/compliance" element={<ProtectedRoute><Compliance /></ProtectedRoute>} />

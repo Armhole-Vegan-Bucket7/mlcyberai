@@ -18,7 +18,8 @@ import {
   ShieldAlert,
   UserCheck,
   Globe,
-  ChevronDown
+  ChevronDown,
+  Link as LinkIcon
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
@@ -161,6 +162,11 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       to: "/reports" 
     },
     { 
+      icon: <LinkIcon size={20} className="text-cyber-blue" />, 
+      text: "Connectors", 
+      to: "/system/connectors" 
+    },
+    { 
       icon: <Settings size={20} className="text-cyber-gray-500" />, 
       text: "Settings", 
       to: "/settings" 
@@ -245,7 +251,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   icon={route.icon}
                   text={route.text}
                   to={route.to}
-                  active={location.pathname === route.to}
+                  active={location.pathname.startsWith(route.to)}
                 />
               ))}
             </SidebarSection>

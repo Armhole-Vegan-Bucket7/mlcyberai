@@ -13,7 +13,6 @@ import { Bell, Moon, Shield, Users, Eye, Lock, ArrowRight, Info, UserCheck, MapP
 import { useTenantContext } from '@/contexts/TenantContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
-import PlatformIntegrations from '@/components/settings/PlatformIntegrations';
 import ThemeSelector from '@/components/settings/ThemeSelector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -306,7 +305,6 @@ const Settings = () => {
           <TabsTrigger value="preferences" className="text-sm">Preferences</TabsTrigger>
           <TabsTrigger value="security" className="text-sm">Security</TabsTrigger>
           <TabsTrigger value="user-roles" className="text-sm">User Roles (RACI)</TabsTrigger>
-          <TabsTrigger value="integrations" className="text-sm">Platform Integrations</TabsTrigger>
           <TabsTrigger value="api" className="text-sm">API Access</TabsTrigger>
         </TabsList>
 
@@ -791,10 +789,6 @@ const Settings = () => {
               <Button>Add New User</Button>
             </CardFooter>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="integrations" className="space-y-4">
-          <PlatformIntegrations />
         </TabsContent>
 
         <TabsContent value="api" className="space-y-4">
