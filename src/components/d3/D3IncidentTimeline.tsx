@@ -158,7 +158,7 @@ const D3IncidentTimeline: React.FC = () => {
   return (
     <div className="relative w-full h-full flex flex-col">
       <div className="text-sm text-cyber-gray-500 mb-2">
-        Showing {data.length} incidents over time for {selectedTenant.name}
+        Showing {data.length} incidents in March 2025 for {selectedTenant.name}
       </div>
       <div className="flex-1 relative">
         <svg ref={svgRef} width="100%" height="100%" />

@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -157,6 +158,7 @@ serve(async (req) => {
             content: `You are an AI assistant for a cybersecurity dashboard. You help users find information from the security metrics data for ${tenantName}. 
             You should answer queries by providing specific metrics from the data. Always be concise and direct.
             If the requested information isn't in the provided data, say so politely.
+            The current date is March 2025.
             Here's the current metrics data for ${tenantName}: ${context}`
           },
           { role: 'user', content: query }

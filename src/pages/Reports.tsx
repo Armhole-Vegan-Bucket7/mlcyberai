@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useTenantContext } from '@/contexts/TenantContext';
 import PageLayout from '@/components/layout/PageLayout';
@@ -30,14 +29,18 @@ import { downloadReport } from '@/utils/ReportUtils';
 import GenerateReportDialog from '@/components/reports/GenerateReportDialog';
 import MicrolandLogo from '@/components/reports/MicrolandLogo';
 import { toast } from '@/hooks/use-toast';
+import { addYears, addMonths, subDays } from 'date-fns';
 
 const Reports = () => {
   const { selectedTenant } = useTenantContext();
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [reports, setReports] = useState<Report[]>(() => generateReports());
   
-  // Generate tenant-specific reports
+  // Generate tenant-specific reports with March 2025 dates
   function generateReports(): Report[] {
+    // Base date: March 2025
+    const marchDate = addYears(addMonths(new Date(), 10), 1);
+    
     const baseReports: Report[] = [
       {
         id: `${selectedTenant.id}-REP-001`,
@@ -45,8 +48,8 @@ const Reports = () => {
         description: "Overview of security incidents, alerts, and metrics for the past month",
         category: "security",
         status: "ready",
-        lastGenerated: "2023-11-30T09:15:00Z",
-        nextScheduled: "2023-12-31T09:00:00Z",
+        lastGenerated: subDays(marchDate, 5).toISOString(),
+        nextScheduled: subDays(marchDate, -5).toISOString(), // 5 days in the future
         format: "PDF"
       },
       {
@@ -55,7 +58,7 @@ const Reports = () => {
         description: "Comprehensive vulnerability assessment results with remediation recommendations",
         category: "vulnerability",
         status: "ready",
-        lastGenerated: "2023-12-01T14:30:00Z",
+        lastGenerated: subDays(marchDate, 7).toISOString(),
         format: "PDF"
       },
       {
@@ -64,7 +67,7 @@ const Reports = () => {
         description: "Compliance status against industry standards and regulations",
         category: "compliance",
         status: "scheduled",
-        nextScheduled: "2023-12-15T08:00:00Z",
+        nextScheduled: subDays(marchDate, -2).toISOString(), // 2 days in the future
         format: "PDF"
       },
       {
@@ -81,7 +84,7 @@ const Reports = () => {
         description: "Audit of user permissions and access control changes",
         category: "audit",
         status: "ready",
-        lastGenerated: "2023-11-25T11:20:00Z",
+        lastGenerated: subDays(marchDate, 10).toISOString(),
         format: "XLSX"
       },
       {
@@ -90,7 +93,7 @@ const Reports = () => {
         description: "Executive summary of security posture and key metrics",
         category: "security",
         status: "scheduled",
-        nextScheduled: "2023-12-05T15:00:00Z",
+        nextScheduled: subDays(marchDate, -3).toISOString(), // 3 days in the future
         format: "PDF"
       },
       {
@@ -99,7 +102,7 @@ const Reports = () => {
         description: "Employee security training compliance and phishing test results",
         category: "compliance",
         status: "ready",
-        lastGenerated: "2023-11-28T16:45:00Z",
+        lastGenerated: subDays(marchDate, 12).toISOString(),
         format: "PDF"
       },
       {
@@ -108,7 +111,7 @@ const Reports = () => {
         description: "Analysis of network security controls and identified gaps",
         category: "security",
         status: "ready",
-        lastGenerated: "2023-11-20T10:30:00Z",
+        lastGenerated: subDays(marchDate, 15).toISOString(),
         format: "PDF"
       }
     ];
@@ -121,7 +124,7 @@ const Reports = () => {
         description: "Aggregated security metrics across all managed clients",
         category: "security",
         status: "ready",
-        lastGenerated: "2023-12-01T08:15:00Z",
+        lastGenerated: subDays(marchDate, 1).toISOString(),
         format: "PDF"
       });
     } else if (selectedTenant.id === '2') { // RSM
@@ -131,7 +134,7 @@ const Reports = () => {
         description: "Industry-specific compliance report for financial regulations",
         category: "compliance",
         status: "ready",
-        lastGenerated: "2023-11-30T14:20:00Z",
+        lastGenerated: subDays(marchDate, 4).toISOString(),
         format: "PDF"
       });
     } else if (selectedTenant.id === '3') { // Indorama
@@ -141,7 +144,7 @@ const Reports = () => {
         description: "Security assessment of operational technology environments",
         category: "security",
         status: "ready",
-        lastGenerated: "2023-11-29T11:30:00Z",
+        lastGenerated: subDays(marchDate, 6).toISOString(),
         format: "PDF"
       });
     }

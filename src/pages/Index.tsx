@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import MetricCard from '@/components/dashboard/MetricCard';
@@ -7,7 +6,7 @@ import ChartCard from '@/components/dashboard/ChartCard';
 import ThreatActivityTable from '@/components/dashboard/ThreatActivityTable';
 import MetricsSearch from '@/components/dashboard/MetricsSearch';
 import { Shield, AlertCircle, Bug, Clock, Users, Server } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addYears, addMonths } from 'date-fns';
 import { getRecentTimestamp } from '@/utils/dateUtils';
 
 // Lazy load the D3 visualizations
@@ -38,7 +37,7 @@ const threatData = [
   { name: 'Identity', value: 13 },
 ];
 
-// Updated threat events with recent timestamps
+// Updated threat events with March 2025 timestamps
 const threatEvents = [
   {
     id: '1',
@@ -87,9 +86,10 @@ const Index = () => {
   const [showD3Visuals, setShowD3Visuals] = useState(false);
   
   useEffect(() => {
-    // Function to update the current date and time
+    // Function to update the current date and time to show March 2025
     const updateDateTime = () => {
-      const now = new Date();
+      // Base date: March 2025
+      const now = addYears(addMonths(new Date(), 10), 1);
       setCurrentDateTime(format(now, 'MMMM d, yyyy HH:mm') + ' UTC');
     };
     
