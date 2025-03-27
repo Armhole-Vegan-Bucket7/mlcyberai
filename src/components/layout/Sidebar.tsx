@@ -193,7 +193,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               <div className="flex items-center">
                 <Cpu className="text-cyber-purple w-6 h-6 mr-2" />
                 <h1 className="font-bold text-lg bg-gradient-to-r from-cyber-blue to-cyber-purple bg-clip-text text-transparent">
-                  Microland Cyber AI
+                  Cyber AI Command Center
                 </h1>
                 <Badge variant="outline" className="ml-2 text-[9px] px-1 py-0 h-4 font-normal border-cyber-purple/40 text-cyber-purple">
                   beta0.1
@@ -259,7 +259,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         <div className="mt-auto pt-6 px-4">
           <div className="bg-cyber-blue/5 p-4 rounded-lg border border-cyber-blue/10 animate-fade-in">
             <p className="text-xs text-cyber-gray-600 dark:text-cyber-gray-400">
-              Platform Version <span className="font-medium">2.4.1</span>
+              Beta v1-cycso
             </p>
           </div>
         </div>
