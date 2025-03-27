@@ -55,8 +55,8 @@ serve(async (req) => {
     // Handle different actions
     if (action === 'generate') {
       try {
-        // Generate a new TOTP secret
-        const secret = await generateSecureRandom();
+        // Generate a new TOTP secret - using Deno's crypto API
+        const secret = await generateSecretForDeno();
         const issuer = 'CyberShield';
         const label = user.email || user.id;
         
@@ -341,36 +341,29 @@ serve(async (req) => {
   }
 })
 
-// Helper function to generate a secure random Base32 secret
-async function generateSecureRandom() {
-  const randomValues = new Uint8Array(16);
+// Helper function to generate a secure random Base32 secret using Deno's crypto API
+async function generateSecretForDeno() {
+  // Generate 20 bytes of random data (160 bits)
+  const randomValues = new Uint8Array(20);
   crypto.getRandomValues(randomValues);
   
-  // Convert to Base32
+  // Base32 encoding
   const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   let base32Secret = '';
   
-  for (let i = 0; i < randomValues.length; i += 5) {
-    const buffer = randomValues.slice(i, i + 5);
-    const bitLength = buffer.length * 8;
+  // Process each byte
+  for (let i = 0; i < randomValues.length; i++) {
+    const byte = randomValues[i];
+    // Each byte gives us 8 bits, we need 5 bits per Base32 character
+    const char1 = base32Chars[byte >> 3]; // Take the first 5 bits
+    const char2 = base32Chars[(byte & 0x07) << 2]; // Take the remaining 3 bits, shifted left by 2
     
-    // Process each 5-byte chunk
-    let bits = 0;
-    let value = 0;
+    base32Secret += char1;
     
-    for (let j = 0; j < buffer.length; j++) {
-      value = (value << 8) | buffer[j];
-      bits += 8;
-      
-      while (bits >= 5) {
-        bits -= 5;
-        base32Secret += base32Chars[(value >>> bits) & 31];
-      }
-    }
-    
-    // Handle remaining bits if the buffer is not a multiple of 5 bytes
-    if (bits > 0) {
-      base32Secret += base32Chars[(value << (5 - bits)) & 31];
+    // Only add the second character if we're not at the very end
+    // or if we have enough bits for a full character
+    if (i < randomValues.length - 1 || (byte & 0x07) !== 0) {
+      base32Secret += char2;
     }
   }
   
