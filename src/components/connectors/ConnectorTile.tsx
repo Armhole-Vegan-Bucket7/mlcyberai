@@ -80,7 +80,7 @@ const ConnectorTile = ({
   };
 
   return (
-    <Card className="h-64 transition-all duration-200 hover:shadow-md hover:translate-y-[-2px]">
+    <Card className="w-full h-64 transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="relative h-full flex flex-col">
         {/* Connection Status Bar */}
         <div 
