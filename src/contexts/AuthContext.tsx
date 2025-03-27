@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,9 +83,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkTotpStatus = async (): Promise<boolean> => {
     if (!session) return false;
     
+    console.log("Checking TOTP status...");
+    
     try {
-      console.log("Checking TOTP status...");
-      
       const statusPromise = supabase.functions.invoke<TOTPStatusResponse>('totp', {
         body: { action: 'status' },
       });
@@ -129,11 +130,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (data.success) {
         setTotpEnabled(false);
+        toast({
+          title: "2FA Disabled",
+          description: "Two-factor authentication has been successfully disabled for your account.",
+        });
       } else if (data.error) {
         throw new Error(data.error);
       }
     } catch (error: any) {
       console.error('Error disabling TOTP:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to disable two-factor authentication. Please try again.",
+        variant: "destructive",
+      });
       throw error;
     }
   };

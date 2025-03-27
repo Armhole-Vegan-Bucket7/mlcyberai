@@ -193,6 +193,11 @@ const Settings = () => {
         } catch (error: any) {
           console.error("Error checking initial TOTP status:", error);
           setTotpStatusError("Unable to verify 2FA status. Please try again.");
+          toast({
+            title: "Error",
+            description: "Failed to check 2FA status. Please try again.",
+            variant: "destructive",
+          });
         } finally {
           setCheckingTOTPStatus(false);
         }

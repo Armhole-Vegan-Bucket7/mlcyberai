@@ -10,8 +10,8 @@ import { Loader2, AlertTriangle, Copy, CheckCircle, ArrowRight, ShieldCheck } fr
 import { useToast } from '@/hooks/use-toast';
 
 interface TOTPSetupProps {
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
 // Timeout utility function
