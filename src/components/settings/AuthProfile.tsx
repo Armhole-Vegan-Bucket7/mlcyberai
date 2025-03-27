@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +30,7 @@ import {
   QrCode,
   AlertTriangle,
   RefreshCw,
+  RefreshCw,
   CheckCircle
 } from 'lucide-react';
 import { 
@@ -46,7 +46,7 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
-interface SecurityProfileProps {
+interface AuthProfileProps {
   user: User;
 }
 
@@ -60,7 +60,7 @@ const passwordFormSchema = z.object({
   path: ["confirmPassword"],
 });
 
-const SecurityProfile: React.FC<SecurityProfileProps> = ({ user }) => {
+const AuthProfile: React.FC<AuthProfileProps> = ({ user }) => {
   const { toast } = useToast();
   const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -268,7 +268,7 @@ const SecurityProfile: React.FC<SecurityProfileProps> = ({ user }) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Security Profile
+            Auth Profile
           </CardTitle>
           <CardDescription>
             Manage security settings and authentication methods
@@ -566,4 +566,4 @@ const SecurityProfile: React.FC<SecurityProfileProps> = ({ user }) => {
   );
 };
 
-export default SecurityProfile;
+export default AuthProfile;

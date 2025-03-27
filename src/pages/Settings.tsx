@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,7 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import SecurityProfile from '@/components/settings/SecurityProfile';
+import AuthProfile from '@/components/settings/AuthProfile';
 
 // Define RACI role types
 type RaciRole = 'admin' | 'reader' | 'auditor' | 'customer' | 'ciso';
@@ -484,7 +483,7 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="security" className="space-y-6">
-          {user && <SecurityProfile user={user} />}
+          {user && <AuthProfile user={user} />}
         </TabsContent>
 
         <TabsContent value="preferences" className="space-y-4">
