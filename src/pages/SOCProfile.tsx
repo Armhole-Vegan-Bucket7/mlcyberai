@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { socProfileData, getUpdatedLogTraffic } from '@/data/socProfileData';
@@ -20,9 +19,8 @@ const SOCProfile = () => {
   const [monitoredRegions, setMonitoredRegions] = useState<number>(socProfileData.regions.length);
   // Set total connectors to start from 2 as default
   const [totalConnectors, setTotalConnectors] = useState<number>(2);
-  const [totalLogTraffic, setTotalLogTraffic] = useState<number>(
-    socProfileData.regions.reduce((sum, region) => sum + region.totalLogTraffic, 0)
-  );
+  // Set global log traffic to start from 10 GB/day as default
+  const [totalLogTraffic, setTotalLogTraffic] = useState<number>(10);
 
   const handleCountrySelect = (country: RegionCountry | null) => {
     setSelectedCountry(country);
@@ -30,13 +28,23 @@ const SOCProfile = () => {
 
   // Handlers for incrementing and decrementing metrics
   const incrementMetric = (setter: React.Dispatch<React.SetStateAction<number>>, value: number) => {
+    // For log traffic, cap the maximum at 100 GB/day
+    if (setter === setTotalLogTraffic && value >= 100) {
+      return;
+    }
     setter(value + 1);
   };
 
   const decrementMetric = (setter: React.Dispatch<React.SetStateAction<number>>, value: number) => {
-    if (value > 0) {
-      setter(value - 1);
+    // For log traffic, don't go below 0.1 GB/day
+    if (setter === setTotalLogTraffic && value <= 0.1) {
+      return;
     }
+    // For other metrics, don't go below 0
+    else if (value <= 0) {
+      return;
+    }
+    setter(value - 1);
   };
 
   return (
@@ -116,6 +124,7 @@ const SOCProfile = () => {
                 size="icon" 
                 className="h-8 w-8" 
                 onClick={() => incrementMetric(setTotalLogTraffic, totalLogTraffic)}
+                disabled={totalLogTraffic >= 100}
               >
                 <Plus size={16} />
               </Button>
@@ -124,7 +133,7 @@ const SOCProfile = () => {
                 size="icon" 
                 className="h-8 w-8" 
                 onClick={() => decrementMetric(setTotalLogTraffic, totalLogTraffic)}
-                disabled={totalLogTraffic <= 0}
+                disabled={totalLogTraffic <= 0.1}
               >
                 <Minus size={16} />
               </Button>
