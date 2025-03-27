@@ -30,7 +30,6 @@ import {
   QrCode,
   AlertTriangle,
   RefreshCw,
-  RefreshCw,
   CheckCircle
 } from 'lucide-react';
 import { 
@@ -50,7 +49,6 @@ interface AuthProfileProps {
   user: User;
 }
 
-// Form validation schema for password change
 const passwordFormSchema = z.object({
   currentPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
   newPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
@@ -160,7 +158,6 @@ const AuthProfile: React.FC<AuthProfileProps> = ({ user }) => {
       
       setSecret(data.secret);
       
-      // Generate QR code for the OTP Auth URL
       try {
         const qrResponse = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.otpauth)}`);
         
@@ -227,7 +224,6 @@ const AuthProfile: React.FC<AuthProfileProps> = ({ user }) => {
     setError(null);
     
     try {
-      // First validate the code
       const { data: validationData, error: validationError } = await supabase.functions.invoke('totp', {
         body: { 
           action: 'validate',
@@ -241,7 +237,6 @@ const AuthProfile: React.FC<AuthProfileProps> = ({ user }) => {
         throw new Error("Invalid verification code");
       }
       
-      // Then disable MFA
       const { data, error } = await supabase.functions.invoke('totp', {
         body: { action: 'disable' }
       });
@@ -373,7 +368,6 @@ const AuthProfile: React.FC<AuthProfileProps> = ({ user }) => {
         </CardContent>
       </Card>
       
-      {/* MFA Setup Dialog */}
       <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -494,7 +488,6 @@ const AuthProfile: React.FC<AuthProfileProps> = ({ user }) => {
         </DialogContent>
       </Dialog>
       
-      {/* MFA Disable Dialog */}
       <Dialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
