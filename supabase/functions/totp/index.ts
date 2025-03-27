@@ -1,7 +1,8 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import * as otplib from 'https://esm.sh/otplib@12.0.1'
+// Import specific modules from otplib instead of the whole package
+import { authenticator } from 'https://esm.sh/@otplib/preset-default@12.0.1'
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -50,12 +51,16 @@ serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
+    console.log(`Processing ${action} request for user ${user.id}`);
+
     // Handle different actions
     if (action === 'generate') {
       try {
         // Generate a new TOTP secret
-        const secret = otplib.authenticator.generateSecret()
-        const otpauth = otplib.authenticator.keyuri(user.email || user.id, 'CyberShield', secret)
+        const secret = authenticator.generateSecret()
+        const otpauth = authenticator.keyuri(user.email || user.id, 'CyberShield', secret)
+        
+        console.log(`TOTP secret generated successfully for user ${user.id}`);
         
         return new Response(
           JSON.stringify({ secret, otpauth }),
@@ -64,7 +69,7 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error generating TOTP:', error)
         return new Response(
-          JSON.stringify({ error: 'Could not generate TOTP secret' }),
+          JSON.stringify({ error: 'Could not generate TOTP secret', details: error.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -72,9 +77,16 @@ serve(async (req) => {
     else if (action === 'verify') {
       const { secret, verificationCode } = body;
       
+      if (!secret || !verificationCode) {
+        return new Response(
+          JSON.stringify({ error: 'Missing required parameters' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
       try {
         // Verify the provided code
-        const isValid = otplib.authenticator.verify({
+        const isValid = authenticator.verify({
           token: verificationCode,
           secret
         });
@@ -93,10 +105,12 @@ serve(async (req) => {
           if (updateError) {
             console.error('Error saving TOTP secret:', updateError)
             return new Response(
-              JSON.stringify({ error: 'Could not save TOTP secret' }),
+              JSON.stringify({ error: 'Could not save TOTP secret', details: updateError.message }),
               { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
           }
+          
+          console.log(`TOTP verified and enabled for user ${user.id}`);
           
           return new Response(
             JSON.stringify({ success: true }),
@@ -111,13 +125,20 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error verifying TOTP:', error)
         return new Response(
-          JSON.stringify({ error: 'Could not verify TOTP code' }),
+          JSON.stringify({ error: 'Could not verify TOTP code', details: error.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
     } 
     else if (action === 'validate') {
       const { code } = body;
+      
+      if (!code) {
+        return new Response(
+          JSON.stringify({ error: 'Missing verification code' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
       
       try {
         // Get the user's TOTP secret
@@ -130,7 +151,7 @@ serve(async (req) => {
         if (profileError || !profile) {
           console.error('Profile error:', profileError)
           return new Response(
-            JSON.stringify({ error: 'Could not retrieve user profile' }),
+            JSON.stringify({ error: 'Could not retrieve user profile', details: profileError?.message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
@@ -143,7 +164,7 @@ serve(async (req) => {
         }
         
         // Verify the provided code against the stored secret
-        const isValid = otplib.authenticator.verify({ 
+        const isValid = authenticator.verify({ 
           token: code, 
           secret: profile.totp_secret 
         });
@@ -155,7 +176,7 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error validating TOTP:', error)
         return new Response(
-          JSON.stringify({ error: 'Could not validate TOTP code' }),
+          JSON.stringify({ error: 'Could not validate TOTP code', details: error.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -175,10 +196,12 @@ serve(async (req) => {
         if (updateError) {
           console.error('Error disabling TOTP:', updateError)
           return new Response(
-            JSON.stringify({ error: 'Could not disable TOTP' }),
+            JSON.stringify({ error: 'Could not disable TOTP', details: updateError.message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
+        
+        console.log(`TOTP disabled for user ${user.id}`);
         
         return new Response(
           JSON.stringify({ success: true }),
@@ -187,7 +210,7 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error disabling TOTP:', error)
         return new Response(
-          JSON.stringify({ error: 'Could not disable TOTP' }),
+          JSON.stringify({ error: 'Could not disable TOTP', details: error.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -219,7 +242,7 @@ serve(async (req) => {
             if (createError) {
               console.error('Error creating profile:', createError)
               return new Response(
-                JSON.stringify({ error: 'Could not create user profile' }),
+                JSON.stringify({ error: 'Could not create user profile', details: createError.message }),
                 { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
               )
             }
@@ -232,10 +255,12 @@ serve(async (req) => {
           }
           
           return new Response(
-            JSON.stringify({ error: 'Could not retrieve TOTP status' }),
+            JSON.stringify({ error: 'Could not retrieve TOTP status', details: profileError.message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
+        
+        console.log(`TOTP status for user ${user.id}: ${profile?.totp_enabled ? 'enabled' : 'disabled'}`);
         
         return new Response(
           JSON.stringify({ enabled: profile?.totp_enabled || false }),
@@ -244,7 +269,7 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error checking TOTP status:', error)
         return new Response(
-          JSON.stringify({ error: 'Could not check TOTP status' }),
+          JSON.stringify({ error: 'Could not check TOTP status', details: error.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
