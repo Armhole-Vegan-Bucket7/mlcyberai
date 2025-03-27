@@ -8,7 +8,7 @@ import { Globe, Activity, Server, Plus, Minus, Info } from 'lucide-react';
 import MetricCard from '@/components/dashboard/MetricCard';
 import { Button } from '@/components/ui/button';
 import TechnologySection from '@/components/soc-profile/TechnologySection';
-import CommandCenterTable from '@/components/soc-profile/CommandCenterTable';
+import GlobalDeliveryCenter from '@/components/soc-profile/GlobalDeliveryCenter';
 import { 
   Tooltip,
   TooltipContent,
@@ -18,7 +18,6 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 
-// Function to generate random log traffic based on connectors
 const generateLogTraffic = (connectors: number): number => {
   if (connectors <= 0) return 0;
   return Math.round(connectors * (Math.random() * 90 + 10)); // Random value between 10 and 100 per connector
@@ -29,10 +28,8 @@ const SOCProfile = () => {
   const selectedRegionId = selectedCountry ? 
     socProfileData.regions.find(r => r.countries.some(c => c.id === selectedCountry.id))?.id : null;
   
-  // Instead of separate metrics state, we'll track regional data and calculate totals
   const [monitoredRegions, setMonitoredRegions] = useState<number>(socProfileData.regions.length);
   
-  // State for regional data
   const [regionData, setRegionData] = useState<{
     id: string;
     name: string;
@@ -45,19 +42,15 @@ const SOCProfile = () => {
     logTraffic: 0
   })));
   
-  // Calculate totals from regional data
   const totalConnectors = regionData.reduce((sum, region) => sum + region.connectors, 0);
   const totalLogTraffic = regionData.reduce((sum, region) => sum + region.logTraffic, 0);
   
-  // Initialize with 2 connectors distributed
   useEffect(() => {
     if (totalConnectors === 0 && socProfileData.regions.length > 0) {
-      // Distribute 2 connectors to first two regions
       const initialData = [...regionData];
       if (initialData.length >= 1) initialData[0].connectors = 1;
       if (initialData.length >= 2) initialData[1].connectors = 1;
       
-      // Generate log traffic for regions with connectors
       initialData.forEach(region => {
         if (region.connectors > 0) {
           region.logTraffic = generateLogTraffic(region.connectors);
@@ -66,12 +59,10 @@ const SOCProfile = () => {
       
       setRegionData(initialData);
       
-      // Update the socProfileData regions for display
       updateSocProfileData(initialData);
     }
   }, []);
   
-  // Function to update socProfileData with current region data
   const updateSocProfileData = (data: typeof regionData) => {
     socProfileData.regions = socProfileData.regions.map(region => {
       const updatedRegion = data.find(r => r.id === region.id);
@@ -85,7 +76,6 @@ const SOCProfile = () => {
     });
   };
   
-  // Handle adding a connector to a region
   const addConnectorToRegion = (regionId: string) => {
     const updatedData = regionData.map(region => {
       if (region.id === regionId) {
@@ -103,7 +93,6 @@ const SOCProfile = () => {
     updateSocProfileData(updatedData);
   };
   
-  // Handle removing a connector from a region
   const removeConnectorFromRegion = (regionId: string) => {
     const updatedData = regionData.map(region => {
       if (region.id === regionId) {
@@ -125,7 +114,6 @@ const SOCProfile = () => {
     setSelectedCountry(country);
   };
 
-  // Increment and decrement for monitored regions
   const incrementMonitoredRegions = () => {
     setMonitoredRegions(prev => prev + 1);
   };
@@ -322,13 +310,8 @@ const SOCProfile = () => {
         </Card>
 
         <div className="glass rounded-lg p-4">
-          <h2 className="text-xl font-semibold mb-4">Security Technology Stack</h2>
-          <TechnologySection />
-        </div>
-
-        <div className="glass rounded-lg p-4">
-          <h2 className="text-xl font-semibold mb-4">Command Center – SOC Tradecraft Table</h2>
-          <CommandCenterTable />
+          <h2 className="text-xl font-semibold mb-4">Global Delivery Center - View</h2>
+          <GlobalDeliveryCenter />
         </div>
       </div>
     </PageLayout>
