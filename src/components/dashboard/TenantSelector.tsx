@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, ChevronDown, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -68,7 +69,7 @@ export function TenantSelector() {
         aria-haspopup="true"
       >
         <Building className="w-4 h-4 text-cyber-blue" />
-        <span className="font-medium">{selectedTenant.name}</span>
+        <span className="font-normal tracking-wide uppercase text-xs">{selectedTenant.name}</span>
         <ChevronDown className={cn(
           "w-4 h-4 text-cyber-gray-400 transition-transform duration-200",
           isOpen && "transform rotate-180"
