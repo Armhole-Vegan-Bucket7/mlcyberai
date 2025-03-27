@@ -4,11 +4,21 @@ import * as d3 from 'd3';
 import { incidentTimelineData } from './mockData';
 import { useTenantContext } from '@/contexts/TenantContext';
 
+// Define proper types for our data
+interface IncidentTimelineData {
+  date: string;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  parsedDate?: Date;
+}
+
 const D3IncidentTimeline: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const { selectedTenant } = useTenantContext();
-  const [data, setData] = useState(incidentTimelineData);
+  const [data, setData] = useState<IncidentTimelineData[]>(incidentTimelineData);
   
   // Parse the dates once
   const parsedData = data.map(d => ({
@@ -42,7 +52,7 @@ const D3IncidentTimeline: React.FC = () => {
 
     // Stack the data
     const keys = ["critical", "high", "medium", "low"];
-    const stack = d3.stack<(typeof parsedData)[0]>().keys(keys);
+    const stack = d3.stack<IncidentTimelineData>().keys(keys as Array<keyof IncidentTimelineData>);
     const stackedData = stack(parsedData);
 
     // Color scale
@@ -51,8 +61,12 @@ const D3IncidentTimeline: React.FC = () => {
       .range(["#FF3B30", "#FF9500", "#FFCC00", "#34C759"]);
 
     // Area generator
-    const area = d3.area<d3.SeriesPoint<(typeof parsedData)[0]>>()
-      .x(d => x(parsedData[d.data.parsedDate ? parsedData.findIndex(p => p.parsedDate === d.data.parsedDate) : 0].parsedDate))
+    const area = d3.area<d3.SeriesPoint<IncidentTimelineData>>()
+      .x(d => {
+        const index = parsedData.findIndex(p => p.parsedDate && d.data.parsedDate && 
+                                           p.parsedDate.getTime() === d.data.parsedDate.getTime());
+        return x(parsedData[index >= 0 ? index : 0].parsedDate as Date);
+      })
       .y0(d => y(d[0]))
       .y1(d => y(d[1]))
       .curve(d3.curveMonotoneX);
@@ -81,7 +95,7 @@ const D3IncidentTimeline: React.FC = () => {
         // Find the closest data point
         const bisect = d3.bisector((d: {parsedDate: Date}) => d.parsedDate).left;
         const index = bisect(parsedData, xDate, 1);
-        const dataPoint = parsedData[index - 1];
+        const dataPoint = index > 0 ? parsedData[index - 1] : parsedData[0];
         
         if (!dataPoint) return;
         
@@ -89,7 +103,8 @@ const D3IncidentTimeline: React.FC = () => {
         const value = dataPoint[key];
         
         // Format the date for display
-        const formattedDate = d3.timeFormat("%b %d, %Y")(dataPoint.parsedDate);
+        const formattedDate = dataPoint.parsedDate ? 
+          d3.timeFormat("%b %d, %Y")(dataPoint.parsedDate) : '';
         
         tooltipRef.current.innerHTML = `
           <div class="font-medium">${d.key}: ${value}</div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { getTenantMetrics, type Vulnerability, type SeverityLevel } from '@/data/tenantMetrics';
@@ -72,7 +71,7 @@ const Vulnerabilities = () => {
   };
 
   // Get severity badge styling
-  const getSeverityBadgeClasses = (severity: SeverityLevel) => {
+  const getSeverityBadgeClasses = (severity: string) => {
     switch (severity) {
       case 'critical':
         return "bg-cyber-red/10 text-cyber-red border-cyber-red/30";
@@ -82,10 +81,12 @@ const Vulnerabilities = () => {
         return "bg-cyber-yellow/10 text-cyber-yellow border-cyber-yellow/30";
       case 'low':
         return "bg-cyber-blue/10 text-cyber-blue border-cyber-blue/30";
+      default:
+        return "bg-cyber-gray/10 text-cyber-gray border-cyber-gray/30";
     }
   };
 
-  const getStatusBadgeClasses = (status: Vulnerability['status']) => {
+  const getStatusBadgeClasses = (status: string) => {
     switch (status) {
       case 'new':
         return "bg-cyber-red/10 text-cyber-red border-cyber-red/30";
@@ -95,6 +96,8 @@ const Vulnerabilities = () => {
         return "bg-cyber-green/10 text-cyber-green border-cyber-green/30";
       case 'accepted':
         return "bg-cyber-blue/10 text-cyber-blue border-cyber-blue/30";
+      default:
+        return "bg-cyber-gray/10 text-cyber-gray border-cyber-gray/30";
     }
   };
 
@@ -106,7 +109,6 @@ const Vulnerabilities = () => {
   };
 
   return (
-    
     <PageLayout>
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
         <div className="page-transition">
