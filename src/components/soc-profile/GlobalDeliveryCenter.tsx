@@ -4,11 +4,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, Upload, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SOCRole } from '@/types/socTeam';
+import { useToast } from '@/components/ui/use-toast';
 
 const DEFAULT_ROLES = [
   'Incident Commander',
@@ -66,6 +67,7 @@ const getAvatarColor = (name: string): string => {
 };
 
 const GlobalDeliveryCenter: React.FC = () => {
+  const { toast } = useToast();
   const [teamMembers, setTeamMembers] = useState<SOCRole[]>([
     {
       id: '1',
@@ -76,7 +78,8 @@ const GlobalDeliveryCenter: React.FC = () => {
       shiftHours: '09:00-17:00',
       certifications: ['CISSP', 'CISM'],
       region: 'North America',
-      responsibilities: 'Overall SOC management, escalation point for major incidents'
+      responsibilities: 'Overall SOC management, escalation point for major incidents',
+      profileImage: '' // No default image
     },
     {
       id: '2',
@@ -87,7 +90,8 @@ const GlobalDeliveryCenter: React.FC = () => {
       shiftHours: '08:00-16:00',
       certifications: ['CEH', 'OSCP'],
       region: 'Europe',
-      responsibilities: 'Proactive threat hunting and investigation'
+      responsibilities: 'Proactive threat hunting and investigation',
+      profileImage: '' // No default image
     },
     {
       id: '3',
@@ -98,7 +102,8 @@ const GlobalDeliveryCenter: React.FC = () => {
       shiftHours: '00:00-08:00',
       certifications: ['Security+'],
       region: 'Asia',
-      responsibilities: 'Initial alert triage and investigation'
+      responsibilities: 'Initial alert triage and investigation',
+      profileImage: '' // No default image
     }
   ]);
 
@@ -114,7 +119,8 @@ const GlobalDeliveryCenter: React.FC = () => {
       shiftHours: '',
       certifications: [],
       region: '',
-      responsibilities: ''
+      responsibilities: '',
+      profileImage: ''
     };
     setTeamMembers([...teamMembers, newMember]);
   };
@@ -156,6 +162,54 @@ const GlobalDeliveryCenter: React.FC = () => {
       return member;
     }));
   };
+
+  const handleImageUpload = (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file (JPEG, PNG, etc.)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Image must be smaller than 2MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageUrl = e.target?.result as string;
+      updateTeamMember(id, 'profileImage', imageUrl);
+      
+      toast({
+        title: "Profile image updated",
+        description: "The team member's profile image has been updated.",
+        variant: "default"
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeProfileImage = (id: string) => {
+    updateTeamMember(id, 'profileImage', '');
+    
+    toast({
+      title: "Profile image removed",
+      description: "The team member's profile image has been removed.",
+      variant: "default"
+    });
+  };
   
   return (
     <Card>
@@ -195,15 +249,43 @@ const GlobalDeliveryCenter: React.FC = () => {
                 teamMembers.map((member) => (
                   <TableRow key={member.id}>
                     <TableCell>
-                      <Avatar className="h-10 w-10 border">
-                        <AvatarImage 
-                          src={`https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'men' : 'women'}/${parseInt(member.id) % 100}.jpg`} 
-                          alt={`${member.firstName} ${member.lastName}`} 
-                        />
-                        <AvatarFallback className={getAvatarColor(`${member.firstName} ${member.lastName}`)}>
-                          {getInitials(member.firstName, member.lastName)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative group">
+                        <Avatar className="h-10 w-10 border relative">
+                          {member.profileImage ? (
+                            <AvatarImage 
+                              src={member.profileImage}
+                              alt={`${member.firstName} ${member.lastName}`} 
+                            />
+                          ) : (
+                            <AvatarFallback className={getAvatarColor(`${member.firstName} ${member.lastName}`)}>
+                              {getInitials(member.firstName, member.lastName)}
+                            </AvatarFallback>
+                          )}
+                          
+                          {/* Overlay actions */}
+                          <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-1">
+                              <label className="cursor-pointer p-1 bg-primary/80 rounded-full hover:bg-primary">
+                                <Upload className="h-3 w-3 text-white" />
+                                <input 
+                                  type="file" 
+                                  className="hidden" 
+                                  accept="image/*"
+                                  onChange={(e) => handleImageUpload(member.id, e)}
+                                />
+                              </label>
+                              {member.profileImage && (
+                                <button 
+                                  className="p-1 bg-destructive/80 rounded-full hover:bg-destructive"
+                                  onClick={() => removeProfileImage(member.id)}
+                                >
+                                  <X className="h-3 w-3 text-white" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </Avatar>
+                      </div>
                     </TableCell>
                     
                     <TableCell>
