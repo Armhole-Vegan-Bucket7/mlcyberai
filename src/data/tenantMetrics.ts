@@ -1,5 +1,6 @@
 import { Activity, AlertCircle, BarChart3, Bell, Bug, Clock, DollarSign, ExternalLink, FileCog, Shield, Target, Users } from "lucide-react";
 import { type LucideIcon } from "lucide-react";
+import { getRecentTimestamp } from "@/utils/dateUtils";
 
 // Types for our data structures
 export type SeverityLevel = 'critical' | 'high' | 'medium' | 'low';
@@ -43,7 +44,7 @@ export interface SOCMetric {
 
 // Generate tenant-specific metrics data
 const generateMicrolandData = () => {
-  const incidents: Incident[] = [
+  const incidents = [
     {
       id: "ML-INC-001",
       name: "Unauthorized Admin Access",
@@ -51,7 +52,7 @@ const generateMicrolandData = () => {
       status: "investigating",
       severity: "critical",
       affectedSystems: ["Admin Portal", "User Database"],
-      detectedAt: "2023-12-02T14:30:45Z",
+      detectedAt: getRecentTimestamp(0, 10),
       assignedTo: "John Smith",
       source: "Sentinel"
     },
@@ -62,7 +63,7 @@ const generateMicrolandData = () => {
       status: "contained",
       severity: "high",
       affectedSystems: ["HR Department Endpoints"],
-      detectedAt: "2023-12-01T09:15:22Z",
+      detectedAt: getRecentTimestamp(1, 15),
       assignedTo: "Sarah Johnson",
       source: "Crowdstrike"
     },
@@ -73,7 +74,7 @@ const generateMicrolandData = () => {
       status: "open",
       severity: "medium",
       affectedSystems: ["Marketing Dept Endpoints", "IT Workstations"],
-      detectedAt: "2023-12-01T18:42:10Z",
+      detectedAt: getRecentTimestamp(1, 6),
       assignedTo: "Michael Patel",
       source: "Defender"
     },
@@ -84,13 +85,13 @@ const generateMicrolandData = () => {
       status: "resolved",
       severity: "low",
       affectedSystems: ["Public Website"],
-      detectedAt: "2023-11-30T11:20:15Z",
+      detectedAt: getRecentTimestamp(2, 13),
       assignedTo: "Amy Rodriguez",
       source: "CloudFlare"
     },
   ];
 
-  const vulnerabilities: Vulnerability[] = [
+  const vulnerabilities = [
     {
       id: "ML-VUL-001",
       name: "Apache Log4j Vulnerability",
@@ -98,7 +99,7 @@ const generateMicrolandData = () => {
       status: "in progress",
       severity: "critical",
       affectedSystems: ["API Servers", "Authentication Service"],
-      discoveredAt: "2023-12-01T10:30:00Z",
+      discoveredAt: getRecentTimestamp(2, 14),
       cvss: 9.8,
       cve: "CVE-2021-44228"
     },
@@ -109,7 +110,7 @@ const generateMicrolandData = () => {
       status: "new",
       severity: "high",
       affectedSystems: ["Legacy Application Servers"],
-      discoveredAt: "2023-11-29T16:45:20Z",
+      discoveredAt: getRecentTimestamp(3, 8),
       cvss: 7.4
     },
     {
@@ -119,7 +120,7 @@ const generateMicrolandData = () => {
       status: "in progress",
       severity: "medium",
       affectedSystems: ["Domain Controllers", "File Servers"],
-      discoveredAt: "2023-11-28T09:15:30Z",
+      discoveredAt: getRecentTimestamp(4, 15),
       cvss: 5.6
     },
     {
@@ -129,7 +130,7 @@ const generateMicrolandData = () => {
       status: "accepted",
       severity: "medium",
       affectedSystems: ["Active Directory"],
-      discoveredAt: "2023-11-25T14:20:10Z",
+      discoveredAt: getRecentTimestamp(5, 10),
       cvss: 4.8
     },
     {
@@ -139,10 +140,9 @@ const generateMicrolandData = () => {
       status: "resolved",
       severity: "high",
       affectedSystems: ["Customer Portal API"],
-      discoveredAt: "2023-11-22T11:10:05Z",
+      discoveredAt: getRecentTimestamp(8, 14),
       cvss: 8.2
     },
-    // Additional vulnerabilities of different severities
     {
       id: "ML-VUL-006",
       name: "Spring4Shell Vulnerability",
@@ -150,7 +150,7 @@ const generateMicrolandData = () => {
       status: "new",
       severity: "critical",
       affectedSystems: ["Web Applications", "API Gateway"],
-      discoveredAt: "2023-12-02T08:15:00Z",
+      discoveredAt: getRecentTimestamp(1, 16),
       cvss: 9.6,
       cve: "CVE-2022-22965"
     },
@@ -161,7 +161,7 @@ const generateMicrolandData = () => {
       status: "in progress",
       severity: "high",
       affectedSystems: ["Customer Management System"],
-      discoveredAt: "2023-11-30T13:20:15Z",
+      discoveredAt: getRecentTimestamp(1, 30),
       cvss: 7.8
     },
     {
@@ -171,7 +171,7 @@ const generateMicrolandData = () => {
       status: "new",
       severity: "high",
       affectedSystems: ["Accounting System"],
-      discoveredAt: "2023-11-28T10:45:30Z",
+      discoveredAt: getRecentTimestamp(1, 28),
       cvss: 8.1,
       cve: "CVE-2023-1234"
     },
@@ -182,7 +182,7 @@ const generateMicrolandData = () => {
       status: "accepted",
       severity: "low",
       affectedSystems: ["Corporate Website", "Partner Portal"],
-      discoveredAt: "2023-11-24T16:30:10Z",
+      discoveredAt: getRecentTimestamp(1, 24),
       cvss: 3.7
     },
     {
@@ -192,7 +192,7 @@ const generateMicrolandData = () => {
       status: "in progress",
       severity: "medium",
       affectedSystems: ["Internal Knowledge Base"],
-      discoveredAt: "2023-11-20T09:25:00Z",
+      discoveredAt: getRecentTimestamp(1, 20),
       cvss: 6.4
     },
     {
@@ -202,7 +202,7 @@ const generateMicrolandData = () => {
       status: "new",
       severity: "low",
       affectedSystems: ["Load Balancers"],
-      discoveredAt: "2023-11-18T14:10:20Z",
+      discoveredAt: getRecentTimestamp(1, 18),
       cvss: 3.2
     },
     {
@@ -212,7 +212,7 @@ const generateMicrolandData = () => {
       status: "new",
       severity: "medium",
       affectedSystems: ["Content Management System"],
-      discoveredAt: "2023-11-15T11:05:30Z",
+      discoveredAt: getRecentTimestamp(1, 15),
       cvss: 6.8
     }
   ];
@@ -299,7 +299,7 @@ const generateMicrolandData = () => {
 
 // Generate RSM-specific metrics data
 const generateRSMData = () => {
-  const incidents: Incident[] = [
+  const incidents = [
     {
       id: "RSM-INC-001",
       name: "Ransomware Attempt",
@@ -307,7 +307,7 @@ const generateRSMData = () => {
       status: "contained",
       severity: "critical",
       affectedSystems: ["Finance Dept Workstation"],
-      detectedAt: "2023-12-02T10:15:22Z",
+      detectedAt: getRecentTimestamp(0, 14),
       assignedTo: "David Wilson",
       source: "Crowdstrike"
     },
@@ -318,7 +318,7 @@ const generateRSMData = () => {
       status: "investigating",
       severity: "high",
       affectedSystems: ["Client Portal"],
-      detectedAt: "2023-12-01T22:45:10Z",
+      detectedAt: getRecentTimestamp(1, 2),
       assignedTo: "Emma Clark",
       source: "Sentinel"
     },
@@ -329,13 +329,13 @@ const generateRSMData = () => {
       status: "open",
       severity: "high",
       affectedSystems: ["Email Gateway"],
-      detectedAt: "2023-12-01T14:30:45Z",
+      detectedAt: getRecentTimestamp(1, 10),
       assignedTo: "Robert Chen",
       source: "Proofpoint"
     },
   ];
 
-  const vulnerabilities: Vulnerability[] = [
+  const vulnerabilities = [
     {
       id: "RSM-VUL-001",
       name: "Critical VMware ESXi Vulnerability",
@@ -343,7 +343,7 @@ const generateRSMData = () => {
       status: "in progress",
       severity: "critical",
       affectedSystems: ["Virtual Infrastructure"],
-      discoveredAt: "2023-12-01T08:20:00Z",
+      discoveredAt: getRecentTimestamp(2, 16),
       cvss: 9.1,
       cve: "CVE-2023-20892"
     },
@@ -354,7 +354,7 @@ const generateRSMData = () => {
       status: "new",
       severity: "high",
       affectedSystems: ["Customer Portal"],
-      discoveredAt: "2023-11-30T11:45:20Z",
+      discoveredAt: getRecentTimestamp(3, 30),
       cvss: 8.2
     },
     {
@@ -364,7 +364,7 @@ const generateRSMData = () => {
       status: "new",
       severity: "medium",
       affectedSystems: ["Partner API Gateway"],
-      discoveredAt: "2023-11-28T14:10:30Z",
+      discoveredAt: getRecentTimestamp(4, 14),
       cvss: 6.3
     },
     {
@@ -374,10 +374,9 @@ const generateRSMData = () => {
       status: "in progress",
       severity: "medium",
       affectedSystems: ["Network Infrastructure"],
-      discoveredAt: "2023-11-27T09:50:10Z",
+      discoveredAt: getRecentTimestamp(5, 15),
       cvss: 5.9
     },
-    // Additional vulnerabilities of different severities
     {
       id: "RSM-VUL-005",
       name: "Exchange Server Zero-Day",
@@ -385,7 +384,7 @@ const generateRSMData = () => {
       status: "new",
       severity: "critical",
       affectedSystems: ["Email Servers"],
-      discoveredAt: "2023-12-02T10:15:00Z",
+      discoveredAt: getRecentTimestamp(6, 10),
       cvss: 9.9,
       cve: "CVE-2023-21000"
     },
@@ -396,7 +395,7 @@ const generateRSMData = () => {
       status: "in progress",
       severity: "high",
       affectedSystems: ["Company Blog"],
-      discoveredAt: "2023-11-29T15:30:20Z",
+      discoveredAt: getRecentTimestamp(7, 16),
       cvss: 7.6
     },
     {
@@ -406,7 +405,7 @@ const generateRSMData = () => {
       status: "new",
       severity: "high",
       affectedSystems: ["Internal Tools", "API Gateway"],
-      discoveredAt: "2023-11-26T13:40:15Z",
+      discoveredAt: getRecentTimestamp(8, 13),
       cvss: 8.0
     },
     {
@@ -416,7 +415,7 @@ const generateRSMData = () => {
       status: "in progress",
       severity: "medium",
       affectedSystems: ["Public Websites", "Client Portal"],
-      discoveredAt: "2023-11-24T11:25:30Z",
+      discoveredAt: getRecentTimestamp(9, 10),
       cvss: 5.2
     },
     {
@@ -426,7 +425,7 @@ const generateRSMData = () => {
       status: "new",
       severity: "low",
       affectedSystems: ["Marketing Website", "Partner Portal"],
-      discoveredAt: "2023-11-22T09:10:45Z",
+      discoveredAt: getRecentTimestamp(10, 14),
       cvss: 3.4
     },
     {
@@ -436,7 +435,7 @@ const generateRSMData = () => {
       status: "new",
       severity: "medium",
       affectedSystems: ["Document Management System"],
-      discoveredAt: "2023-11-20T14:05:10Z",
+      discoveredAt: getRecentTimestamp(11, 11),
       cvss: 6.1
     },
     {
@@ -446,7 +445,7 @@ const generateRSMData = () => {
       status: "in progress",
       severity: "low",
       affectedSystems: ["Web Applications"],
-      discoveredAt: "2023-11-18T10:30:25Z",
+      discoveredAt: getRecentTimestamp(12, 10),
       cvss: 3.8
     },
     {
@@ -456,7 +455,7 @@ const generateRSMData = () => {
       status: "new",
       severity: "high",
       affectedSystems: ["Customer Database"],
-      discoveredAt: "2023-11-15T16:20:30Z",
+      discoveredAt: getRecentTimestamp(13, 16),
       cvss: 7.5
     }
   ];
@@ -543,7 +542,7 @@ const generateRSMData = () => {
 
 // Generate Indorama-specific metrics data
 const generateIndoramaData = () => {
-  const incidents: Incident[] = [
+  const incidents = [
     {
       id: "IND-INC-001",
       name: "OT Network Intrusion Attempt",
@@ -551,7 +550,7 @@ const generateIndoramaData = () => {
       status: "investigating",
       severity: "critical",
       affectedSystems: ["OT Network Gateway"],
-      detectedAt: "2023-12-02T08:45:30Z",
+      detectedAt: getRecentTimestamp(0, 15),
       assignedTo: "Mark Johnson",
       source: "Darktrace"
     },
@@ -562,7 +561,7 @@ const generateIndoramaData = () => {
       status: "contained",
       severity: "high",
       affectedSystems: ["Supplier Portal", "Partner Database"],
-      detectedAt: "2023-12-01T16:30:20Z",
+      detectedAt: getRecentTimestamp(1, 20),
       assignedTo: "Lisa Chang",
       source: "Sentinel"
     },
@@ -573,7 +572,7 @@ const generateIndoramaData = () => {
       status: "open",
       severity: "high",
       affectedSystems: ["Document Management System"],
-      detectedAt: "2023-11-30T14:20:10Z",
+      detectedAt: getRecentTimestamp(1, 25),
       assignedTo: "Thomas Brown",
       source: "Varonis"
     },
@@ -584,13 +583,13 @@ const generateIndoramaData = () => {
       status: "investigating",
       severity: "high",
       affectedSystems: ["Office 365", "Email Gateway"],
-      detectedAt: "2023-11-29T09:15:45Z",
+      detectedAt: getRecentTimestamp(1, 30),
       assignedTo: "Jennifer Lopez",
       source: "Microsoft Defender"
     },
   ];
 
-  const vulnerabilities: Vulnerability[] = [
+  const vulnerabilities = [
     {
       id: "IND-VUL-001",
       name: "PLC Firmware Vulnerability",
@@ -598,7 +597,7 @@ const generateIndoramaData = () => {
       status: "new",
       severity: "critical",
       affectedSystems: ["Manufacturing PLCs"],
-      discoveredAt: "2023-12-01T10:30:00Z",
+      discoveredAt: getRecentTimestamp(2, 14),
       cvss: 9.6,
       cve: "CVE-2023-1234"
     },
@@ -609,7 +608,7 @@ const generateIndoramaData = () => {
       status: "in progress",
       severity: "critical",
       affectedSystems: ["SCADA Control Systems"],
-      discoveredAt: "2023-11-28T16:45:20Z",
+      discoveredAt: getRecentTimestamp(3, 16),
       cvss: 8.7
     },
     {
@@ -619,7 +618,7 @@ const generateIndoramaData = () => {
       status: "in progress",
       severity: "high",
       affectedSystems: ["SAP ERP"],
-      discoveredAt: "2023-11-25T09:30:30Z",
+      discoveredAt: getRecentTimestamp(4, 30),
       cvss: 7.8
     },
     {
@@ -629,7 +628,7 @@ const generateIndoramaData = () => {
       status: "in progress",
       severity: "high",
       affectedSystems: ["Remote Access Infrastructure"],
-      discoveredAt: "2023-11-22T14:20:10Z",
+      discoveredAt: getRecentTimestamp(5, 13),
       cvss: 7.4
     },
     {
@@ -639,10 +638,9 @@ const generateIndoramaData = () => {
       status: "new",
       severity: "medium",
       affectedSystems: ["Plant HMI Controllers"],
-      discoveredAt: "2023-11-20T11:10:05Z",
+      discoveredAt: getRecentTimestamp(6, 11),
       cvss: 6.2
     },
-    // Additional vulnerabilities of different severities
     {
       id: "IND-VUL-006",
       name: "OT Network Segmentation Bypass",
@@ -650,7 +648,7 @@ const generateIndoramaData = () => {
       status: "new",
       severity: "critical",
       affectedSystems: ["Industrial Firewalls", "OT Network"],
-      discoveredAt: "2023-12-02T09:45:00Z",
+      discoveredAt: getRecentTimestamp(7, 10),
       cvss: 9.8,
       cve: "CVE-2023-7865"
     },
@@ -661,7 +659,7 @@ const generateIndoramaData = () => {
       status: "in progress",
       severity: "high",
       affectedSystems: ["Production Line PLCs"],
-      discoveredAt: "2023-11-30T14:20:15Z",
+      discoveredAt: getRecentTimestamp(8, 15),
       cvss: 8.4,
       cve: "CVE-2023-6543"
     },
@@ -672,7 +670,7 @@ const generateIndoramaData = () => {
       status: "new",
       severity: "high",
       affectedSystems: ["Factory Automation Systems"],
-      discoveredAt: "2023-11-27T11:35:20Z",
+      discoveredAt: getRecentTimestamp(9, 14),
       cvss: 7.9
     },
     {
@@ -682,7 +680,7 @@ const generateIndoramaData = () => {
       status: "in progress",
       severity: "medium",
       affectedSystems: ["Environmental Sensors", "IoT Gateway"],
-      discoveredAt: "2023-11-24T08:50:30Z",
+      discoveredAt: getRecentTimestamp(10, 11),
       cvss: 6.5
     },
     {
@@ -692,7 +690,7 @@ const generateIndoramaData = () => {
       status: "new",
       severity: "high",
       affectedSystems: ["OPC Server Infrastructure"],
-      discoveredAt: "2023-11-21T15:10:45Z",
+      discoveredAt: getRecentTimestamp(11, 10),
       cvss: 8.1
     },
     {
@@ -702,7 +700,7 @@ const generateIndoramaData = () => {
       status: "accepted",
       severity: "low",
       affectedSystems: ["Packaging Line Controllers"],
-      discoveredAt: "2023-11-18T13:25:10Z",
+      discoveredAt: getRecentTimestamp(12, 16),
       cvss: 4.2
     },
     {
@@ -712,7 +710,7 @@ const generateIndoramaData = () => {
       status: "new",
       severity: "medium",
       affectedSystems: ["IoT Messaging Infrastructure"],
-      discoveredAt: "2023-11-15T10:15:30Z",
+      discoveredAt: getRecentTimestamp(13, 13),
       cvss: 5.9
     },
     {
@@ -722,7 +720,7 @@ const generateIndoramaData = () => {
       status: "in progress",
       severity: "medium",
       affectedSystems: ["Process Control Systems"],
-      discoveredAt: "2023-11-12T09:05:15Z",
+      discoveredAt: getRecentTimestamp(14, 11),
       cvss: 6.7
     },
     {
@@ -732,7 +730,7 @@ const generateIndoramaData = () => {
       status: "new",
       severity: "low",
       affectedSystems: ["Vendor Access Gateways"],
-      discoveredAt: "2023-11-10T14:30:20Z",
+      discoveredAt: getRecentTimestamp(15, 10),
       cvss: 3.9
     }
   ];

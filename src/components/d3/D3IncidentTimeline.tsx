@@ -88,9 +88,12 @@ const D3IncidentTimeline: React.FC = () => {
         const key = d.key as keyof typeof dataPoint;
         const value = dataPoint[key];
         
+        // Format the date for display
+        const formattedDate = d3.timeFormat("%b %d, %Y")(dataPoint.parsedDate);
+        
         tooltipRef.current.innerHTML = `
           <div class="font-medium">${d.key}: ${value}</div>
-          <div class="text-xs opacity-75">${dataPoint.date}</div>
+          <div class="text-xs opacity-75">${formattedDate}</div>
         `;
         
         tooltipRef.current.style.left = `${event.pageX + 10}px`;
@@ -107,7 +110,7 @@ const D3IncidentTimeline: React.FC = () => {
     // Add the X Axis
     svg.append("g")
       .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(x).ticks(5).tickFormat(d3.timeFormat("%b %Y") as any));
+      .call(d3.axisBottom(x).ticks(5).tickFormat(d3.timeFormat("%b %d") as any));
 
     // Add the Y Axis
     svg.append("g")

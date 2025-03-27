@@ -8,11 +8,12 @@ import ThreatActivityTable from '@/components/dashboard/ThreatActivityTable';
 import MetricsSearch from '@/components/dashboard/MetricsSearch';
 import { Shield, AlertCircle, Bug, Clock, Users, Server } from 'lucide-react';
 import { format } from 'date-fns';
+import { getRecentTimestamp } from '@/utils/dateUtils';
 
 // Lazy load the D3 visualizations
 const D3Visuals = lazy(() => import('@/components/d3/D3Visuals'));
 
-// Mock data for dashboard
+// Mock data for dashboard with recent dates
 const alertsChartData = [
   { name: 'Mon', alerts: 12, incidents: 3 },
   { name: 'Tue', alerts: 19, incidents: 5 },
@@ -37,11 +38,11 @@ const threatData = [
   { name: 'Identity', value: 13 },
 ];
 
-// Fixed the threatEvents data to use the correct type for eventType
+// Updated threat events with recent timestamps
 const threatEvents = [
   {
     id: '1',
-    timestamp: '2023-12-01 15:32:47',
+    timestamp: format(new Date(getRecentTimestamp(0, 2)), 'yyyy-MM-dd HH:mm:ss'),
     eventType: 'incident' as const,
     severity: 'critical' as const,
     source: 'Sentinel',
@@ -49,7 +50,7 @@ const threatEvents = [
   },
   {
     id: '2',
-    timestamp: '2023-12-01 14:21:18',
+    timestamp: format(new Date(getRecentTimestamp(0, 3)), 'yyyy-MM-dd HH:mm:ss'),
     eventType: 'alert' as const,
     severity: 'high' as const,
     source: 'Crowdstrike',
@@ -57,7 +58,7 @@ const threatEvents = [
   },
   {
     id: '3',
-    timestamp: '2023-12-01 13:45:33',
+    timestamp: format(new Date(getRecentTimestamp(0, 4)), 'yyyy-MM-dd HH:mm:ss'),
     eventType: 'detection' as const,
     severity: 'medium' as const,
     source: 'Defender',
@@ -65,7 +66,7 @@ const threatEvents = [
   },
   {
     id: '4',
-    timestamp: '2023-12-01 11:29:05',
+    timestamp: format(new Date(getRecentTimestamp(0, 6)), 'yyyy-MM-dd HH:mm:ss'),
     eventType: 'alert' as const,
     severity: 'medium' as const,
     source: 'Sentinel',
@@ -73,7 +74,7 @@ const threatEvents = [
   },
   {
     id: '5',
-    timestamp: '2023-12-01 09:53:22',
+    timestamp: format(new Date(getRecentTimestamp(0, 8)), 'yyyy-MM-dd HH:mm:ss'),
     eventType: 'detection' as const,
     severity: 'low' as const,
     source: 'Defender',
