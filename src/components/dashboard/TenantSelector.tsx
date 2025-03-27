@@ -95,6 +95,7 @@ export function TenantSelector() {
               className={cn(
                 "flex items-center gap-2 w-full px-3 py-2 text-left text-sm",
                 "hover:bg-accent hover:text-accent-foreground transition-colors",
+                "font-normal tracking-wide uppercase text-xs",
                 tenant.id === selectedTenant.id && "bg-accent/50"
               )}
               role="menuitem"
