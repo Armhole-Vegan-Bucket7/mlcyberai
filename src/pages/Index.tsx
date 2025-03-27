@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import MetricCard from '@/components/dashboard/MetricCard';
 import StatusCard from '@/components/dashboard/StatusCard';
@@ -8,6 +8,9 @@ import ThreatActivityTable from '@/components/dashboard/ThreatActivityTable';
 import MetricsSearch from '@/components/dashboard/MetricsSearch';
 import { Shield, AlertCircle, Bug, Clock, Users, Server } from 'lucide-react';
 import { format } from 'date-fns';
+
+// Lazy load the D3 visualizations
+const D3Visuals = lazy(() => import('@/components/d3/D3Visuals'));
 
 // Mock data for dashboard
 const alertsChartData = [
@@ -80,6 +83,7 @@ const threatEvents = [
 
 const Index = () => {
   const [currentDateTime, setCurrentDateTime] = useState('');
+  const [showD3Visuals, setShowD3Visuals] = useState(false);
   
   useEffect(() => {
     // Function to update the current date and time
@@ -117,6 +121,22 @@ const Index = () => {
       
       <div className="mb-6">
         <MetricsSearch />
+      </div>
+      
+      {/* Advanced D3 Visualizations */}
+      <div className="mb-6">
+        <button 
+          onClick={() => setShowD3Visuals(!showD3Visuals)}
+          className="text-sm font-medium flex items-center gap-2 bg-cyber-blue/10 text-cyber-blue px-4 py-2 rounded-lg hover:bg-cyber-blue/20 transition-colors"
+        >
+          {showD3Visuals ? 'Hide' : 'Show'} Advanced Visualizations
+        </button>
+        
+        {showD3Visuals && (
+          <Suspense fallback={<div className="mt-4 p-8 text-center">Loading advanced visualizations...</div>}>
+            <D3Visuals className="mt-4" />
+          </Suspense>
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
