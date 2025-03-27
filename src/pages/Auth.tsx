@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Navigate } from "react-router-dom";
@@ -15,6 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import TOTPVerification from "@/components/auth/TOTPVerification";
 
 interface LoginFormValues {
   email: string;
@@ -30,6 +32,7 @@ interface RegisterFormValues {
 const Auth: React.FC = () => {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [formError, setFormError] = useState<string | null>(null);
+  const [needTOTP, setNeedTOTP] = useState(false);
   const { user, signIn, signUp } = useAuth();
 
   const loginForm = useForm<LoginFormValues>({
@@ -51,6 +54,10 @@ const Auth: React.FC = () => {
     setFormError(null);
     try {
       await signIn(values.email, values.password);
+      
+      // Check if the user has 2FA enabled
+      // The auth flow will continue in the useEffect that watches the user state
+      // If 2FA is required, we'll show the TOTP verification screen
     } catch (error: any) {
       setFormError(error.message || "Failed to sign in");
     }
@@ -72,8 +79,36 @@ const Auth: React.FC = () => {
     }
   };
 
-  if (user) {
+  const handleTOTPSuccess = () => {
+    // When TOTP is verified, we continue with the auth flow
+    setNeedTOTP(false);
+  };
+
+  const handleTOTPCancel = () => {
+    // User canceled TOTP verification, so we sign out
+    setNeedTOTP(false);
+  };
+
+  // Check if user is authenticated and doesn't need TOTP
+  if (user && !needTOTP) {
     return <Navigate to="/" replace />;
+  }
+
+  // If user needs to enter TOTP code
+  if (needTOTP) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full p-4">
+          <div className="flex justify-center mb-6">
+            <MicrolandLogo className="h-12" />
+          </div>
+          <TOTPVerification
+            onSuccess={handleTOTPSuccess}
+            onCancel={handleTOTPCancel}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,7 +9,24 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Bell, Moon, Shield, Users, Eye, Lock, ArrowRight, Info, UserCheck, MapPin, Clock, Image } from 'lucide-react';
+import { 
+  Bell, 
+  Moon, 
+  Shield, 
+  Users, 
+  Eye, 
+  Lock, 
+  ArrowRight, 
+  Info, 
+  UserCheck, 
+  MapPin, 
+  Clock, 
+  Image,
+  ShieldCheck,
+  ShieldX,
+  Loader2,
+  AlertTriangle
+} from 'lucide-react';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
@@ -20,6 +37,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import TOTPSetup from '@/components/auth/TOTPSetup';
 
 // Define RACI role types
 type RaciRole = 'admin' | 'reader' | 'auditor' | 'customer' | 'ciso';
@@ -85,7 +114,7 @@ const passwordFormSchema = z.object({
 
 const Settings = () => {
   const { selectedTenant } = useTenantContext();
-  const { user, signOut } = useAuth();
+  const { user, signOut, totpEnabled, checkTotpStatus, disableTotp } = useAuth();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [darkModeAuto, setDarkModeAuto] = useState(true);
@@ -101,6 +130,11 @@ const Settings = () => {
   const [uploading, setUploading] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
+  
+  // State for 2FA
+  const [showTOTPSetup, setShowTOTPSetup] = useState(false);
+  const [checkingTOTPStatus, setCheckingTOTPStatus] = useState(false);
+  const [disablingTOTP, setDisablingTOTP] = useState(false);
 
   // Profile form
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -123,6 +157,68 @@ const Settings = () => {
       confirmPassword: "",
     },
   });
+
+  useEffect(() => {
+    if (user) {
+      // Update form with user data
+      profileForm.reset({
+        fullName: user.user_metadata?.full_name || "",
+        email: user.email || "",
+        location: user.user_metadata?.location || "",
+        timezone: user.user_metadata?.timezone || "UTC",
+        bio: user.user_metadata?.bio || "",
+      });
+      
+      // Update avatar URL
+      setAvatarUrl(user.user_metadata?.avatar_url || null);
+      
+      // Update 2FA status
+      setTwoFactorAuth(!!totpEnabled);
+    }
+  }, [user, totpEnabled]);
+
+  // Check 2FA status on component mount
+  useEffect(() => {
+    const checkTotp = async () => {
+      if (user) {
+        setCheckingTOTPStatus(true);
+        const isEnabled = await checkTotpStatus();
+        setTwoFactorAuth(isEnabled);
+        setCheckingTOTPStatus(false);
+      }
+    };
+    
+    checkTotp();
+  }, [user]);
+
+  // Handle 2FA toggle
+  const handleTwoFactorAuthToggle = async (enabled: boolean) => {
+    if (enabled) {
+      // Show TOTP setup UI
+      setShowTOTPSetup(true);
+    } else {
+      // Disable TOTP
+      setDisablingTOTP(true);
+      try {
+        await disableTotp();
+        setTwoFactorAuth(false);
+      } finally {
+        setDisablingTOTP(false);
+      }
+    }
+  };
+
+  // Handle TOTP setup success
+  const handleTOTPSetupSuccess = () => {
+    setShowTOTPSetup(false);
+    setTwoFactorAuth(true);
+    checkTotpStatus();
+  };
+
+  // Handle TOTP setup cancel
+  const handleTOTPSetupCancel = () => {
+    setShowTOTPSetup(false);
+  };
 
   // Handle profile picture upload
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -629,23 +725,85 @@ const Settings = () => {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="two-factor">Two-Factor Authentication</Label>
+                  <Label htmlFor="two-factor" className="flex items-center gap-2">
+                    {twoFactorAuth ? (
+                      <ShieldCheck className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <ShieldX className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    Two-Factor Authentication
+                  </Label>
                   <p className="text-sm text-muted-foreground">
-                    Add an additional layer of security to your account
+                    {twoFactorAuth 
+                      ? "Your account is protected with two-factor authentication" 
+                      : "Add an additional layer of security to your account"}
                   </p>
                 </div>
-                <Switch
-                  id="two-factor"
-                  checked={twoFactorAuth}
-                  onCheckedChange={setTwoFactorAuth}
-                />
+                {checkingTOTPStatus ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <Switch
+                    id="two-factor"
+                    checked={twoFactorAuth}
+                    onCheckedChange={handleTwoFactorAuthToggle}
+                    disabled={disablingTOTP || showTOTPSetup}
+                  />
+                )}
               </div>
 
-              {twoFactorAuth && (
+              {showTOTPSetup && (
+                <div className="mt-6 pt-4 border-t">
+                  <TOTPSetup 
+                    onSuccess={handleTOTPSetupSuccess}
+                    onCancel={handleTOTPSetupCancel}
+                  />
+                </div>
+              )}
+
+              {twoFactorAuth && !showTOTPSetup && (
                 <div className="mt-4 pt-4 border-t">
-                  <Button className="flex items-center gap-2">
-                    Configure Two-Factor <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  <Alert className="bg-green-50 border-green-200">
+                    <ShieldCheck className="h-4 w-4 text-green-500" />
+                    <AlertTitle>Two-Factor Authentication is enabled</AlertTitle>
+                    <AlertDescription>
+                      Your account is protected with an additional layer of security. You will need to enter a code from your authenticator app when signing in.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="mt-4">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50">
+                          <ShieldX className="mr-2 h-4 w-4" />
+                          Disable Two-Factor Authentication
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Disabling two-factor authentication will make your account less secure. You will no longer need an authenticator app to sign in.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleTwoFactorAuthToggle(false)}
+                            className="bg-red-500 hover:bg-red-600"
+                          >
+                            {disablingTOTP ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Disabling...
+                              </>
+                            ) : (
+                              'Disable 2FA'
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               )}
             </CardContent>

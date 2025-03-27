@@ -11,6 +11,13 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  totpEnabled: boolean | null;
+  checkTotpStatus: () => Promise<boolean>;
+  disableTotp: () => Promise<void>;
+}
+
+interface TOTPStatusResponse {
+  enabled: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -28,6 +36,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Check TOTP status on auth change
+        if (session?.user) {
+          checkTotpStatus();
+        } else {
+          setTotpEnabled(null);
+        }
       }
     );
 
@@ -36,10 +51,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Check TOTP status if there's a session
+      if (session?.user) {
+        checkTotpStatus();
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkTotpStatus = async (): Promise<boolean> => {
+    if (!session) return false;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke<TOTPStatusResponse>('totp', {
+        body: { action: 'status' },
+      });
+      
+      if (error) {
+        console.error('Error checking TOTP status:', error);
+        return false;
+      }
+      
+      setTotpEnabled(data.enabled);
+      return data.enabled;
+    } catch (error) {
+      console.error('Error checking TOTP status:', error);
+      return false;
+    }
+  };
+
+  const disableTotp = async (): Promise<void> => {
+    if (!session) return;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('totp', {
+        body: { action: 'disable' },
+      });
+      
+      if (error) throw error;
+      
+      if (data.success) {
+        setTotpEnabled(false);
+        toast({
+          title: "2FA Disabled",
+          description: "Two-factor authentication has been successfully disabled for your account.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error disabling TOTP:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to disable two-factor authentication",
+        variant: "destructive",
+      });
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -92,6 +160,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
+      setTotpEnabled(null);
+      
       toast({
         title: "Signed out",
         description: "You have been signed out successfully",
@@ -112,6 +182,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signUp,
     signOut,
+    totpEnabled,
+    checkTotpStatus,
+    disableTotp,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
