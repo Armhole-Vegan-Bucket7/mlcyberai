@@ -10,7 +10,7 @@ const corsHeaders = {
 
 // Multi-tenant metrics data
 const tenantsMetricsData = {
-  // Microland MSSP tenant
+  // GlobalRoot tenant
   "1": {
     security: {
       incidents: {
@@ -47,7 +47,7 @@ const tenantsMetricsData = {
       mttr: "3.2 days"
     }
   },
-  // MLCyber Customer1 tenant (formerly RSM)
+  // Microland MSSP tenant
   "2": {
     security: {
       incidents: {
@@ -84,7 +84,7 @@ const tenantsMetricsData = {
       mttr: "2.5 days"
     }
   },
-  // MLCyber Customer2 tenant (formerly Indorama)
+  // MLCyber Customer1 tenant (formerly RSM)
   "3": {
     security: {
       incidents: {

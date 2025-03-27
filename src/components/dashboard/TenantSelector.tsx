@@ -6,7 +6,7 @@ import { useTenantContext } from '@/contexts/TenantContext';
 import { toast } from '@/components/ui/use-toast';
 
 export const TENANTS = [
-  { id: '1', name: 'Microland MSSP' },
+  { id: '1', name: 'GlobalRoot' },
   { id: '2', name: 'MLCyber Customer1' },
   { id: '3', name: 'MLCyber Customer2' },
 ];
