@@ -32,6 +32,7 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
   const [verificationCode, setVerificationCode] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verificationFailed, setVerificationFailed] = useState(false);
   const { toast } = useToast();
   
   // Set up cleanup timeout for loading state
@@ -39,13 +40,14 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
     let timer: NodeJS.Timeout;
     
     if (loading) {
-      // Auto-reset loading state after 10 seconds to prevent hanging UI
+      // Auto-reset loading state after 15 seconds to prevent hanging UI
       timer = setTimeout(() => {
         if (loading) {
           setLoading(false);
-          setError("Verification timed out. Please try again.");
+          setError("Verification timed out. The authentication service might be unavailable. Please try again later.");
+          setVerificationFailed(true);
         }
-      }, 10000);
+      }, 15000);
     }
     
     return () => {
@@ -59,6 +61,7 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
     
     setLoading(true);
     setError(null);
+    setVerificationFailed(false);
     
     try {
       console.log("Verifying TOTP code:", verificationCode);
@@ -72,16 +75,20 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       
       const { data, error } = await withTimeout(
         validatePromise,
-        10000, // 10 seconds timeout
+        12000, // 12 seconds timeout
         "Verification timed out. Please check your internet connection and try again."
       );
       
       if (error) {
         console.error('TOTP validation error:', error);
-        throw new Error("Failed to connect to authentication service. Please try again later.");
+        throw new Error("We're unable to connect to the authentication service. Please try again shortly.");
       }
       
       console.log("TOTP validation result:", data);
+      
+      if (data.error) {
+        throw new Error(data.error || "Verification failed. Please try again.");
+      }
       
       if (data.valid) {
         toast({
@@ -97,6 +104,10 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       console.error('Error verifying TOTP:', err);
       setError(err.message || 'Failed to verify the code. Please try again.');
       setVerificationCode('');
+      
+      if (err.message.includes("timeout") || err.message.includes("connect")) {
+        setVerificationFailed(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -114,6 +125,42 @@ const TOTPVerification: React.FC<TOTPVerificationProps> = ({ onSuccess, onCancel
       }, 300);
     }
   };
+
+  if (verificationFailed) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-500">
+            <AlertTriangle className="h-5 w-5" />
+            Verification Failed
+          </CardTitle>
+          <CardDescription>
+            We couldn't verify your two-factor authentication code
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {error || "The authentication service is currently unavailable. Please try again later."}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button onClick={() => {
+            setVerificationFailed(false);
+            setVerificationCode('');
+          }}>
+            Try Again
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto">

@@ -42,20 +42,21 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
   const [verifying, setVerifying] = useState(false);
   const [secretCopied, setSecretCopied] = useState(false);
   const [setupFailed, setSetupFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Set up cleanup timeout for loading state
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
     if (loading) {
-      // Auto-reset loading state after 10 seconds to prevent hanging UI
+      // Auto-reset loading state after 15 seconds to prevent hanging UI
       timer = setTimeout(() => {
         if (loading) {
           setLoading(false);
           setSetupFailed(true);
-          setError("Operation timed out. Please try again later.");
+          setError("Operation timed out. The authentication service might be unavailable. Please try again later.");
         }
-      }, 10000);
+      }, 15000);
     }
     
     return () => {
@@ -72,7 +73,7 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
     setSetupFailed(false);
     
     try {
-      console.log("Generating TOTP...");
+      console.log("Generating TOTP...", { retryAttempt: retryCount + 1 });
       
       const generatePromise = supabase.functions.invoke('totp', {
         body: { action: 'generate' },
@@ -80,16 +81,20 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
       
       const { data, error } = await withTimeout(
         generatePromise,
-        10000, // 10 seconds timeout
-        "TOTP generation timed out. The service might be temporarily unavailable."
+        12000, // 12 seconds timeout
+        "We're unable to connect to the authentication service. Please try again shortly."
       );
       
       if (error) {
         console.error('Supabase Edge Function error:', error);
-        throw new Error("Failed to connect to authentication service. Please try again later.");
+        throw new Error("We're unable to connect to the authentication service. Please try again shortly.");
       }
       
       console.log("TOTP generation result:", data);
+      
+      if (data.error) {
+        throw new Error(data.error || "Authentication service error. Please try again later.");
+      }
       
       if (data.secret && data.otpauth) {
         setSecret(data.secret);
@@ -102,6 +107,7 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
             const qrBlob = await qrResponse.blob();
             setQrCodeUrl(URL.createObjectURL(qrBlob));
           } else {
+            console.error("QR code generation HTTP error:", qrResponse.status);
             throw new Error("Failed to generate QR code");
           }
         } catch (qrError) {
@@ -116,12 +122,19 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
         
         setStep('verify');
       } else {
-        throw new Error("Invalid response from server");
+        throw new Error("Invalid response from authentication service");
       }
     } catch (err: any) {
       console.error('Error generating TOTP:', err);
-      setError(err.message || 'Failed to generate TOTP secret. Please try again.');
-      setSetupFailed(true);
+      setError(err.message || "We're unable to connect to the authentication service. Please try again shortly.");
+      
+      // Track retry attempts
+      setRetryCount(prev => prev + 1);
+      
+      // After 3 attempts, mark as failed
+      if (retryCount >= 2) {
+        setSetupFailed(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -147,16 +160,20 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
       
       const { data, error } = await withTimeout(
         verifyPromise,
-        10000, // 10 seconds timeout
-        "TOTP verification timed out. Please try again."
+        12000, // 12 seconds timeout
+        "Verification timed out. The authentication service might be unavailable. Please try again later."
       );
       
       if (error) {
         console.error('Edge Function error:', error);
-        throw new Error("Failed to connect to authentication service. Please try again later.");
+        throw new Error("We're unable to connect to the authentication service. Please try again shortly.");
       }
       
       console.log("TOTP verification result:", data);
+      
+      if (data.error) {
+        throw new Error(data.error || "Verification failed. Please try again.");
+      }
       
       if (data.success) {
         toast({
@@ -165,8 +182,8 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
         });
         
         if (onSuccess) onSuccess();
-      } else if (data.error) {
-        setError(data.error);
+      } else {
+        setError("Verification failed. Please make sure you entered the correct code from your authenticator app.");
       }
     } catch (err: any) {
       console.error('Error verifying TOTP:', err);
@@ -227,9 +244,12 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>
-              {error || "Two-Factor Authentication is currently unavailable. Please try again later or contact support."}
+              {error || "The Two-Factor Authentication service is currently unavailable. Please try again later or contact support."}
             </AlertDescription>
           </Alert>
+          <p className="text-sm text-muted-foreground mt-4">
+            This could be due to a temporary authentication service outage or network connectivity issues.
+          </p>
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" onClick={onCancel}>
@@ -275,11 +295,19 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
           
           <div className="flex flex-col items-center">
             <div className="mb-4 p-2 bg-white rounded-lg">
-              <img 
-                src={qrCodeUrl} 
-                alt="QR code for authenticator app" 
-                className="w-48 h-48"
-              />
+              {qrCodeUrl ? (
+                <img 
+                  src={qrCodeUrl} 
+                  alt="QR code for authenticator app" 
+                  className="w-48 h-48"
+                />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center bg-muted">
+                  <p className="text-sm text-muted-foreground text-center">
+                    QR code unavailable. Please use the manual code below.
+                  </p>
+                </div>
+              )}
             </div>
             
             <div className="w-full space-y-2">
@@ -288,12 +316,12 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ onSuccess, onCancel }) => {
               </p>
               
               <div className="flex items-center justify-between p-2 bg-muted rounded-md">
-                <p className="text-sm font-mono">{secret}</p>
+                <p className="text-sm font-mono overflow-auto">{secret}</p>
                 <Button 
                   size="sm" 
                   variant="ghost" 
                   onClick={copySecretToClipboard}
-                  className="h-8 px-2"
+                  className="h-8 px-2 ml-2 shrink-0"
                 >
                   {secretCopied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>

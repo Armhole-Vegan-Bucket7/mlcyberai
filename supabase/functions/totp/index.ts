@@ -1,8 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-// Import specific modules from otplib instead of the whole package
-import { authenticator } from 'https://esm.sh/@otplib/preset-default@12.0.1'
+import { authenticator } from 'https://esm.sh/otpauth@9.1.5'
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -57,8 +56,22 @@ serve(async (req) => {
     if (action === 'generate') {
       try {
         // Generate a new TOTP secret
-        const secret = authenticator.generateSecret()
-        const otpauth = authenticator.keyuri(user.email || user.id, 'CyberShield', secret)
+        const secret = await generateSecureRandom();
+        const issuer = 'CyberShield';
+        const label = user.email || user.id;
+        
+        // Create a new TOTP object
+        const totp = new authenticator.TOTP({
+          issuer: issuer,
+          label: label,
+          algorithm: 'SHA1',
+          digits: 6,
+          period: 30,
+          secret: authenticator.Secret.fromBase32(secret)
+        });
+        
+        // Get the otpauth URL for QR code generation
+        const otpauth = totp.toString();
         
         console.log(`TOTP secret generated successfully for user ${user.id}`);
         
@@ -67,9 +80,13 @@ serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       } catch (error) {
-        console.error('Error generating TOTP:', error)
+        console.error('Error generating TOTP:', error);
         return new Response(
-          JSON.stringify({ error: 'Could not generate TOTP secret', details: error.message }),
+          JSON.stringify({ 
+            error: 'Could not generate TOTP secret', 
+            details: error.message,
+            stack: error.stack
+          }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -85,11 +102,19 @@ serve(async (req) => {
       }
       
       try {
-        // Verify the provided code
-        const isValid = authenticator.verify({
-          token: verificationCode,
-          secret
+        // Create a TOTP object with the provided secret
+        const totp = new authenticator.TOTP({
+          issuer: 'CyberShield',
+          label: user.email || user.id,
+          algorithm: 'SHA1',
+          digits: 6,
+          period: 30,
+          secret: authenticator.Secret.fromBase32(secret)
         });
+        
+        // Verify the provided code
+        const delta = totp.validate({ token: verificationCode });
+        const isValid = delta !== null;
         
         if (isValid) {
           // If valid, save the secret to the user's profile
@@ -125,7 +150,11 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error verifying TOTP:', error)
         return new Response(
-          JSON.stringify({ error: 'Could not verify TOTP code', details: error.message }),
+          JSON.stringify({ 
+            error: 'Could not verify TOTP code', 
+            details: error.message,
+            stack: error.stack
+          }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -163,11 +192,19 @@ serve(async (req) => {
           )
         }
         
-        // Verify the provided code against the stored secret
-        const isValid = authenticator.verify({ 
-          token: code, 
-          secret: profile.totp_secret 
+        // Create a TOTP object with the stored secret
+        const totp = new authenticator.TOTP({
+          issuer: 'CyberShield',
+          label: user.email || user.id,
+          algorithm: 'SHA1',
+          digits: 6,
+          period: 30,
+          secret: authenticator.Secret.fromBase32(profile.totp_secret)
         });
+        
+        // Verify the provided code
+        const delta = totp.validate({ token: code });
+        const isValid = delta !== null;
         
         return new Response(
           JSON.stringify({ valid: isValid }),
@@ -176,7 +213,11 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error validating TOTP:', error)
         return new Response(
-          JSON.stringify({ error: 'Could not validate TOTP code', details: error.message }),
+          JSON.stringify({ 
+            error: 'Could not validate TOTP code', 
+            details: error.message,
+            stack: error.stack
+          }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -210,7 +251,11 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error disabling TOTP:', error)
         return new Response(
-          JSON.stringify({ error: 'Could not disable TOTP', details: error.message }),
+          JSON.stringify({ 
+            error: 'Could not disable TOTP', 
+            details: error.message,
+            stack: error.stack 
+          }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -269,7 +314,11 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error checking TOTP status:', error)
         return new Response(
-          JSON.stringify({ error: 'Could not check TOTP status', details: error.message }),
+          JSON.stringify({ 
+            error: 'Could not check TOTP status', 
+            details: error.message,
+            stack: error.stack 
+          }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -282,8 +331,48 @@ serve(async (req) => {
   } catch (error) {
     console.error('TOTP function error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ 
+        error: 'Internal server error', 
+        details: error.message,
+        stack: error.stack 
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
+
+// Helper function to generate a secure random Base32 secret
+async function generateSecureRandom() {
+  const randomValues = new Uint8Array(16);
+  crypto.getRandomValues(randomValues);
+  
+  // Convert to Base32
+  const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let base32Secret = '';
+  
+  for (let i = 0; i < randomValues.length; i += 5) {
+    const buffer = randomValues.slice(i, i + 5);
+    const bitLength = buffer.length * 8;
+    
+    // Process each 5-byte chunk
+    let bits = 0;
+    let value = 0;
+    
+    for (let j = 0; j < buffer.length; j++) {
+      value = (value << 8) | buffer[j];
+      bits += 8;
+      
+      while (bits >= 5) {
+        bits -= 5;
+        base32Secret += base32Chars[(value >>> bits) & 31];
+      }
+    }
+    
+    // Handle remaining bits if the buffer is not a multiple of 5 bytes
+    if (bits > 0) {
+      base32Secret += base32Chars[(value << (5 - bits)) & 31];
+    }
+  }
+  
+  return base32Secret;
+}

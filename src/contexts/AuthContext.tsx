@@ -14,6 +14,7 @@ interface AuthContextType {
   totpEnabled: boolean | null;
   checkTotpStatus: () => Promise<boolean>;
   disableTotp: () => Promise<void>;
+  isTotpStatusLoading: boolean;
 }
 
 interface TOTPStatusResponse {
@@ -42,6 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
+  const [isTotpStatusLoading, setIsTotpStatusLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -54,9 +56,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Check TOTP status on auth change
         if (session?.user) {
-          checkTotpStatus().catch(error => {
-            console.error("Error checking TOTP status on auth change:", error);
-          });
+          setTimeout(() => {
+            checkTotpStatus().catch(error => {
+              console.error("Error checking TOTP status on auth change:", error);
+            });
+          }, 0);
         } else {
           setTotpEnabled(null);
         }
@@ -71,9 +75,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Check TOTP status if there's a session
       if (session?.user) {
-        checkTotpStatus().catch(error => {
-          console.error("Error checking initial TOTP status:", error);
-        });
+        setTimeout(() => {
+          checkTotpStatus().catch(error => {
+            console.error("Error checking initial TOTP status:", error);
+          });
+        }, 0);
       }
     });
 
@@ -84,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!session) return false;
     
     console.log("Checking TOTP status...");
+    setIsTotpStatusLoading(true);
     
     try {
       const statusPromise = supabase.functions.invoke<TOTPStatusResponse>('totp', {
@@ -104,10 +111,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("TOTP status result:", data);
       setTotpEnabled(data.enabled);
       return data.enabled;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking TOTP status:', error);
       // Don't update state on error to maintain previous known state
       throw error;
+    } finally {
+      setIsTotpStatusLoading(false);
     }
   };
 
@@ -225,6 +234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     totpEnabled,
     checkTotpStatus,
     disableTotp,
+    isTotpStatusLoading,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

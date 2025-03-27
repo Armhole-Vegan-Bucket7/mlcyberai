@@ -115,31 +115,19 @@ const passwordFormSchema = z.object({
 
 const Settings = () => {
   const { selectedTenant } = useTenantContext();
-  const { user, signOut, totpEnabled, checkTotpStatus, disableTotp } = useAuth();
+  const { user, signOut, totpEnabled, checkTotpStatus, disableTotp, isTotpStatusLoading } = useAuth();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [darkModeAuto, setDarkModeAuto] = useState(true);
-  const [twoFactorAuth, setTwoFactorAuth] = useState(false);
-  const [apiToken, setApiToken] = useState('••••••••••••••••••••••••••••••');
-  const [showingToken, setShowingToken] = useState(false);
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  
-  // State for profile settings
+  const [showTOTPSetup, setShowTOTPSetup] = useState(false);
+  const [showTOTPVerification, setShowTOTPVerification] = useState(false);
+  const [disablingTOTP, setDisablingTOTP] = useState(false);
+  const [totpStatusError, setTotpStatusError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.user_metadata?.avatar_url || null);
   const [uploading, setUploading] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
-  
-  // State for 2FA
-  const [showTOTPSetup, setShowTOTPSetup] = useState(false);
-  const [showTOTPVerification, setShowTOTPVerification] = useState(false);
-  const [checkingTOTPStatus, setCheckingTOTPStatus] = useState(false);
-  const [disablingTOTP, setDisablingTOTP] = useState(false);
-  const [totpStatusError, setTotpStatusError] = useState<string | null>(null);
 
-  // Profile form
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -151,7 +139,6 @@ const Settings = () => {
     },
   });
 
-  // Password change form
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
@@ -163,7 +150,6 @@ const Settings = () => {
 
   useEffect(() => {
     if (user) {
-      // Update form with user data
       profileForm.reset({
         fullName: user.user_metadata?.full_name || "",
         email: user.email || "",
@@ -172,29 +158,20 @@ const Settings = () => {
         bio: user.user_metadata?.bio || "",
       });
       
-      // Update avatar URL
       setAvatarUrl(user.user_metadata?.avatar_url || null);
-      
-      // Update 2FA status
-      setTwoFactorAuth(!!totpEnabled);
     }
-  }, [user, totpEnabled]);
+  }, [user]);
 
-  // Check 2FA status on component mount
   useEffect(() => {
     const checkTotp = async () => {
       if (user) {
-        setCheckingTOTPStatus(true);
         setTotpStatusError(null);
         
         try {
-          const isEnabled = await checkTotpStatus();
-          setTwoFactorAuth(isEnabled);
+          await checkTotpStatus();
         } catch (error: any) {
           console.error("Error checking initial TOTP status:", error);
           setTotpStatusError("Two-Factor Authentication is currently unavailable. Please try again later or contact support.");
-        } finally {
-          setCheckingTOTPStatus(false);
         }
       }
     };
@@ -202,54 +179,55 @@ const Settings = () => {
     checkTotp();
   }, [user]);
 
-  // Handle 2FA toggle
   const handleTwoFactorAuthToggle = async (enabled: boolean) => {
+    if (enabled === totpEnabled) return;
+    
     if (enabled) {
-      // Show TOTP setup UI
       setShowTOTPSetup(true);
     } else {
-      // Show verification before disabling
       setShowTOTPVerification(true);
     }
   };
 
-  // Handle TOTP setup success
   const handleTOTPSetupSuccess = () => {
     setShowTOTPSetup(false);
-    setTwoFactorAuth(true);
+    checkTotpStatus().catch(error => {
+      console.error("Error checking TOTP status after setup:", error);
+    });
+    
     toast({
       title: "2FA Enabled",
       description: "Two-factor authentication has been successfully enabled for your account.",
     });
   };
 
-  // Handle TOTP setup cancel
   const handleTOTPSetupCancel = () => {
     setShowTOTPSetup(false);
   };
 
-  // Handle TOTP verification success for disabling
   const handleTOTPVerificationSuccess = async () => {
     setShowTOTPVerification(false);
     
-    // Proceed with disabling TOTP
     setDisablingTOTP(true);
     try {
       await disableTotp();
-      setTwoFactorAuth(false);
+      await checkTotpStatus();
     } catch (error: any) {
       console.error("Error disabling 2FA:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to disable two-factor authentication. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setDisablingTOTP(false);
     }
   };
 
-  // Handle TOTP verification cancel
   const handleTOTPVerificationCancel = () => {
     setShowTOTPVerification(false);
   };
 
-  // Handle profile picture upload
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
@@ -262,7 +240,6 @@ const Settings = () => {
       const fileExt = file.name.split('.').pop();
       const filePath = `${user?.id}-${Math.random()}.${fileExt}`;
 
-      // Upload the file to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(filePath, file);
@@ -271,17 +248,14 @@ const Settings = () => {
         throw uploadError;
       }
 
-      // Get the public URL
       const { data } = supabase.storage
         .from("avatars")
         .getPublicUrl(filePath);
 
-      // Update avatar_url in user metadata
       if (data?.publicUrl) {
         setAvatarUrl(data.publicUrl);
         
-        // Will save this when the profile is updated
-        profileForm.setValue("fullName", profileForm.getValues("fullName")); // Trigger form dirty state
+        profileForm.setValue("fullName", profileForm.getValues("fullName"));
       }
       
       toast({
@@ -299,7 +273,6 @@ const Settings = () => {
     }
   };
 
-  // Handle profile update
   const handleProfileUpdate = async (values: z.infer<typeof profileFormSchema>) => {
     try {
       setUpdateLoading(true);
@@ -331,7 +304,6 @@ const Settings = () => {
     }
   };
 
-  // Handle password change
   const handlePasswordChange = async (values: z.infer<typeof passwordFormSchema>) => {
     try {
       setPasswordChangeLoading(true);
@@ -367,7 +339,6 @@ const Settings = () => {
   };
 
   const handleResetToken = () => {
-    // In a real app, this would call an API to reset the token
     setApiToken('cy_tk_' + Math.random().toString(36).substring(2, 15));
     setShowingToken(true);
     toast({
@@ -635,7 +606,7 @@ const Settings = () => {
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label htmlFor="two-factor" className="flex items-center gap-2">
-                        {twoFactorAuth ? (
+                        {totpEnabled ? (
                           <ShieldCheck className="h-4 w-4 text-green-500" />
                         ) : (
                           <ShieldX className="h-4 w-4 text-muted-foreground" />
@@ -643,7 +614,7 @@ const Settings = () => {
                         Two-Factor Authentication
                       </Label>
                       <p className="text-sm text-muted-foreground">
-                        {twoFactorAuth 
+                        {totpEnabled 
                           ? "Your account is protected with two-factor authentication" 
                           : "Add an additional layer of security to your account"}
                       </p>
@@ -653,14 +624,14 @@ const Settings = () => {
                         </p>
                       )}
                     </div>
-                    {checkingTOTPStatus ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    {isTotpStatusLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     ) : (
                       <Switch
                         id="two-factor"
-                        checked={twoFactorAuth}
+                        checked={!!totpEnabled}
                         onCheckedChange={handleTwoFactorAuthToggle}
-                        disabled={disablingTOTP || showTOTPSetup || showTOTPVerification}
+                        disabled={isTotpStatusLoading || disablingTOTP || showTOTPSetup || showTOTPVerification || totpStatusError !== null}
                       />
                     )}
                   </div>
@@ -683,7 +654,7 @@ const Settings = () => {
                     </div>
                   )}
 
-                  {twoFactorAuth && !showTOTPSetup && !showTOTPVerification && (
+                  {totpEnabled && !showTOTPSetup && !showTOTPVerification && (
                     <div className="mt-4 pt-4 border-t">
                       <Alert className="bg-green-50 border-green-200">
                         <ShieldCheck className="h-4 w-4 text-green-500" />
@@ -700,14 +671,16 @@ const Settings = () => {
                           onClick={() => handleTwoFactorAuthToggle(false)}
                           disabled={disablingTOTP}
                         >
-                          <ShieldX className="mr-2 h-4 w-4" />
                           {disablingTOTP ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               Disabling...
                             </>
                           ) : (
-                            "Disable Two-Factor Authentication"
+                            <>
+                              <ShieldX className="mr-2 h-4 w-4" />
+                              Disable Two-Factor Authentication
+                            </>
                           )}
                         </Button>
                       </div>
