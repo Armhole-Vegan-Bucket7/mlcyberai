@@ -709,16 +709,6 @@ const Settings = () => {
                     </div>
                   )}
                 </CardContent>
-                <CardFooter>
-                  <Alert>
-                    <Info className="h-5 w-5" />
-                    <AlertTitle>Session Security</AlertTitle>
-                    <AlertDescription>
-                      For your security, your session will automatically expire after 30 minutes of inactivity.
-                      You can adjust this in the organization settings.
-                    </AlertDescription>
-                  </Alert>
-                </CardFooter>
               </Card>
               
               <Card>
