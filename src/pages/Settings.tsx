@@ -71,14 +71,6 @@ const mockUsers: User[] = [
   { id: '5', name: 'Michael Brown', email: 'michael@example.com', role: 'ciso', tenantAccess: ['All Tenants'] },
 ];
 
-const roleDescriptions = {
-  admin: 'Full access to all features and tenants',
-  reader: 'View-only access to assigned tenants',
-  auditor: 'Access to audit logs and compliance reports',
-  customer: 'Limited access to specific tenant data',
-  ciso: 'Executive-level access to risk and compliance metrics'
-};
-
 // Timezones array for the dropdown
 const timezones = [
   "UTC",
@@ -127,6 +119,11 @@ const Settings = () => {
   const [uploading, setUploading] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
+  const [apiToken, setApiToken] = useState<string>('cy_tk_' + Math.random().toString(36).substring(2, 15));
+  const [showingToken, setShowingToken] = useState<boolean>(false);
+  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
@@ -951,7 +948,7 @@ const Settings = () => {
                 <div className="flex">
                   <Input 
                     id="api-token" 
-                    value={showingToken ? apiToken : '••••••••••••••••••••••••••••••'} 
+                    value={showingToken ? apiToken : '••••••••••••••••••••••'} 
                     readOnly 
                     className="font-mono"
                   />
