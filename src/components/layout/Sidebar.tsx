@@ -194,12 +194,12 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       
       <div className={cn("flex flex-col h-full p-4", !isMobile && "pt-8")}>
         {!isMobile && (
-          <div className="mb-8 px-4 animate-fade-in">
-            <div className="flex items-center overflow-hidden">
-              <Cpu className="text-cyber-purple w-4 h-4 mr-1 flex-shrink-0" />
-              <h1 className="text-xs uppercase font-medium tracking-wider truncate whitespace-nowrap bg-gradient-to-r from-cyber-blue to-cyber-purple bg-clip-text text-transparent">
+          <div className="mb-6 px-4">
+            <div className="flex items-center">
+              <Cpu className="text-cyber-purple w-3.5 h-3.5 mr-1.5 flex-shrink-0" />
+              <span className="text-xs uppercase text-cyber-gray-500 font-medium tracking-wider truncate whitespace-nowrap">
                 Cyber AI Command
-              </h1>
+              </span>
             </div>
           </div>
         )}
