@@ -11,14 +11,15 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiY3liZXJtb25pdG9yIiwiYSI6ImNsbjUyZXI3ejAxZzAya
 
 interface AttackData {
   id: string;
-  source: [number, number];
-  target: [number, number];
+  source: [number, number]; // Explicitly typed as tuple
+  target: [number, number]; // Explicitly typed as tuple
   organization: string;
   attack_vector: string;
   severity: string;
 }
 
-const severityColors = {
+// Define severity colors
+const severityColors: Record<string, string> = {
   'critical': '#FF3B30',
   'high': '#FF9500',
   'medium': '#FFCC00',
@@ -139,10 +140,10 @@ const WorldAttackMap: React.FC = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const formattedAttacks = data.map(item => ({
+        const formattedAttacks: AttackData[] = data.map(item => ({
           id: item.id,
-          source: [item.source_longitude || 0, item.source_latitude || 0],
-          target: [item.longitude || 0, item.latitude || 0],
+          source: [item.source_longitude || 0, item.source_latitude || 0] as [number, number],
+          target: [item.longitude || 0, item.latitude || 0] as [number, number],
           organization: item.organization,
           attack_vector: item.attack_vector || 'Unknown',
           severity: item.severity || 'medium',
@@ -168,10 +169,10 @@ const WorldAttackMap: React.FC = () => {
     
     if (!newItem.source_longitude || !newItem.longitude) return;
     
-    const attack = {
+    const attack: AttackData = {
       id: newItem.id,
-      source: [newItem.source_longitude, newItem.source_latitude],
-      target: [newItem.longitude, newItem.latitude],
+      source: [newItem.source_longitude, newItem.source_latitude] as [number, number],
+      target: [newItem.longitude, newItem.latitude] as [number, number],
       organization: newItem.organization,
       attack_vector: newItem.attack_vector || 'Unknown',
       severity: newItem.severity || 'medium',
@@ -191,12 +192,12 @@ const WorldAttackMap: React.FC = () => {
 
     // Create a curved line between source and target
     const route = {
-      'type': 'FeatureCollection',
+      'type': 'FeatureCollection' as const,
       'features': [
         {
-          'type': 'Feature',
+          'type': 'Feature' as const,
           'geometry': {
-            'type': 'LineString',
+            'type': 'LineString' as const,
             'coordinates': [
               attack.source,
               [
@@ -255,28 +256,31 @@ const WorldAttackMap: React.FC = () => {
       
       animateLine();
 
+      // Create point geojson for target
+      const pointGeoJson = {
+        'type': 'FeatureCollection' as const,
+        'features': [
+          {
+            'type': 'Feature' as const,
+            'geometry': {
+              'type': 'Point' as const,
+              'coordinates': attack.target
+            },
+            'properties': {
+              'description': `
+                <strong>${attack.organization}</strong><br/>
+                Attack: ${attack.attack_vector}<br/>
+                Severity: ${attack.severity}
+              `
+            }
+          }
+        ]
+      };
+
       // Add source for target point
       map.current.addSource(pointId, {
         'type': 'geojson',
-        'data': {
-          'type': 'FeatureCollection',
-          'features': [
-            {
-              'type': 'Feature',
-              'geometry': {
-                'type': 'Point',
-                'coordinates': attack.target
-              },
-              'properties': {
-                'description': `
-                  <strong>${attack.organization}</strong><br/>
-                  Attack: ${attack.attack_vector}<br/>
-                  Severity: ${attack.severity}
-                `
-              }
-            }
-          ]
-        }
+        'data': pointGeoJson
       });
 
       // Add the target point layer
@@ -318,14 +322,19 @@ const WorldAttackMap: React.FC = () => {
       });
 
       map.current.on('mouseenter', pointId, (e) => {
-        if (!map.current) return;
+        if (!map.current || !e.features) return;
         
         map.current.getCanvas().style.cursor = 'pointer';
         
-        const coordinates = e.features?.[0].geometry.coordinates.slice() as [number, number];
-        const description = e.features?.[0].properties.description;
-        
-        popup.setLngLat(coordinates).setHTML(description).addTo(map.current);
+        const feature = e.features[0];
+        if (feature && feature.geometry.type === 'Point') {
+          const coordinates = (feature.geometry as GeoJSON.Point).coordinates.slice() as [number, number];
+          const description = feature.properties?.description;
+          
+          if (description) {
+            popup.setLngLat(coordinates).setHTML(description).addTo(map.current);
+          }
+        }
       });
       
       map.current.on('mouseleave', pointId, () => {
@@ -335,22 +344,25 @@ const WorldAttackMap: React.FC = () => {
         popup.remove();
       });
 
+      // Create source point geojson
+      const sourcePointGeoJson = {
+        'type': 'FeatureCollection' as const,
+        'features': [
+          {
+            'type': 'Feature' as const,
+            'geometry': {
+              'type': 'Point' as const,
+              'coordinates': attack.source
+            },
+            'properties': {}
+          }
+        ]
+      };
+
       // Add source point
       map.current.addSource(sourceId, {
         'type': 'geojson',
-        'data': {
-          'type': 'FeatureCollection',
-          'features': [
-            {
-              'type': 'Feature',
-              'geometry': {
-                'type': 'Point',
-                'coordinates': attack.source
-              },
-              'properties': {}
-            }
-          ]
-        }
+        'data': sourcePointGeoJson
       });
 
       // Add the source point layer
