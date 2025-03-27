@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { socProfileData, getUpdatedLogTraffic } from '@/data/socProfileData';
@@ -17,9 +18,8 @@ const SOCProfile = () => {
   
   // Create state for editable metrics
   const [monitoredRegions, setMonitoredRegions] = useState<number>(socProfileData.regions.length);
-  const [totalConnectors, setTotalConnectors] = useState<number>(
-    socProfileData.regions.reduce((sum, region) => sum + region.totalConnectors, 0)
-  );
+  // Set total connectors to start from 2 as default
+  const [totalConnectors, setTotalConnectors] = useState<number>(2);
   const [totalLogTraffic, setTotalLogTraffic] = useState<number>(
     socProfileData.regions.reduce((sum, region) => sum + region.totalLogTraffic, 0)
   );
@@ -102,7 +102,7 @@ const SOCProfile = () => {
           <div className="col-span-1 relative">
             <MetricCard
               title="Global Log Traffic"
-              value={`${totalLogTraffic.toLocaleString()} KB/s`}
+              value={`${totalLogTraffic.toLocaleString()} GB/day`}
               icon={<Activity size={24} />}
               className="pr-16"
               change={{

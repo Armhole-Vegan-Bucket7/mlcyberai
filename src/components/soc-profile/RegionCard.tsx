@@ -55,7 +55,7 @@ export function RegionCard({ region, onCountrySelect, isSelected }: RegionCardPr
           
           <div className="text-right">
             <div className="text-sm text-cyber-gray-500">Log Traffic</div>
-            <div className="text-base font-medium animate-pulse">{logTraffic.toLocaleString()} KB/s</div>
+            <div className="text-base font-medium animate-pulse">{logTraffic.toLocaleString()} GB/day</div>
           </div>
           
           {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -73,7 +73,7 @@ export function RegionCard({ region, onCountrySelect, isSelected }: RegionCardPr
               <div className="font-medium">{country.name}</div>
               <div className="flex items-center space-x-4">
                 <Badge variant="outline">{country.connectors} Connectors</Badge>
-                <Badge variant="outline" className="animate-pulse">{country.logTraffic} KB/s</Badge>
+                <Badge variant="outline" className="animate-pulse">{country.logTraffic} GB/day</Badge>
               </div>
             </div>
           ))}
