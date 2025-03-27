@@ -1,7 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import * as otplib from 'https://esm.sh/otplib@12.0.1'
+import { authenticator } from 'https://esm.sh/otplib@12.0.1'
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -54,8 +54,8 @@ serve(async (req) => {
     if (action === 'generate') {
       try {
         // Generate a new TOTP secret
-        const secret = otplib.authenticator.generateSecret()
-        const otpauth = otplib.authenticator.keyuri(user.email || user.id, 'CyberShield', secret)
+        const secret = authenticator.generateSecret()
+        const otpauth = authenticator.keyuri(user.email || user.id, 'CyberShield', secret)
         
         return new Response(
           JSON.stringify({ secret, otpauth }),
@@ -74,7 +74,7 @@ serve(async (req) => {
       
       try {
         // Verify the provided code
-        const isValid = otplib.authenticator.verify({
+        const isValid = authenticator.verify({
           token: verificationCode,
           secret
         });
@@ -128,6 +128,7 @@ serve(async (req) => {
           .single()
         
         if (profileError || !profile) {
+          console.error('Profile error:', profileError)
           return new Response(
             JSON.stringify({ error: 'Could not retrieve user profile' }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -142,7 +143,7 @@ serve(async (req) => {
         }
         
         // Verify the provided code against the stored secret
-        const isValid = otplib.authenticator.verify({ 
+        const isValid = authenticator.verify({ 
           token: code, 
           secret: profile.totp_secret 
         });
@@ -202,6 +203,34 @@ serve(async (req) => {
         
         if (profileError) {
           console.error('Error getting TOTP status:', profileError)
+          // Check if it's a "not found" error
+          if (profileError.code === 'PGRST116') {
+            // Profile doesn't exist, create it
+            const { error: createError } = await supabase
+              .from('profiles')
+              .insert({ 
+                id: user.id,
+                email: user.email,
+                totp_enabled: false,
+                updated_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
+              })
+            
+            if (createError) {
+              console.error('Error creating profile:', createError)
+              return new Response(
+                JSON.stringify({ error: 'Could not create user profile' }),
+                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              )
+            }
+            
+            // Return default status
+            return new Response(
+              JSON.stringify({ enabled: false }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+          
           return new Response(
             JSON.stringify({ error: 'Could not retrieve TOTP status' }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
