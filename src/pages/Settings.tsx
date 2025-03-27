@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,14 +23,11 @@ import {
   MapPin, 
   Clock, 
   Image,
-  ShieldCheck,
-  ShieldX,
-  Loader2,
-  AlertTriangle
+  Loader2
 } from 'lucide-react';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import ThemeSelector from '@/components/settings/ThemeSelector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,8 +46,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import TOTPSetup from '@/components/auth/TOTPSetup';
-import TOTPVerification from '@/components/auth/TOTPVerification';
+import SecurityProfile from '@/components/settings/SecurityProfile';
 
 // Define RACI role types
 type RaciRole = 'admin' | 'reader' | 'auditor' | 'customer' | 'ciso';
@@ -104,35 +101,21 @@ const profileFormSchema = z.object({
   bio: z.string().max(500, { message: "Bio must not exceed 500 characters." }).optional(),
 });
 
-// Form validation schema for password change
-const passwordFormSchema = z.object({
-  currentPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  newPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
-
 const Settings = () => {
   const { selectedTenant } = useTenantContext();
-  const { user, signOut, totpEnabled, checkTotpStatus, disableTotp, isTotpStatusLoading, resetTotpStatus } = useAuth();
+  const { user, signOut } = useAuth();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [darkModeAuto, setDarkModeAuto] = useState(true);
-  const [showTOTPSetup, setShowTOTPSetup] = useState(false);
-  const [showTOTPVerification, setShowTOTPVerification] = useState(false);
-  const [disablingTOTP, setDisablingTOTP] = useState(false);
-  const [totpStatusError, setTotpStatusError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.user_metadata?.avatar_url || null);
   const [uploading, setUploading] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
-  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
   const [apiToken, setApiToken] = useState<string>('cy_tk_' + Math.random().toString(36).substring(2, 15));
   const [showingToken, setShowingToken] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const { toast } = useToast();
 
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
@@ -142,15 +125,6 @@ const Settings = () => {
       location: user?.user_metadata?.location || "",
       timezone: user?.user_metadata?.timezone || "UTC",
       bio: user?.user_metadata?.bio || "",
-    },
-  });
-
-  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
-    resolver: zodResolver(passwordFormSchema),
-    defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
     },
   });
 
@@ -167,85 +141,6 @@ const Settings = () => {
       setAvatarUrl(user.user_metadata?.avatar_url || null);
     }
   }, [user]);
-
-  useEffect(() => {
-    const checkTotp = async () => {
-      if (user) {
-        setTotpStatusError(null);
-        
-        try {
-          await checkTotpStatus();
-        } catch (error: any) {
-          console.error("Error checking initial TOTP status:", error);
-          setTotpStatusError("Two-Factor Authentication is currently unavailable. Please try again later or contact support.");
-        }
-      }
-    };
-    
-    checkTotp();
-  }, [user]);
-
-  const handleTwoFactorAuthToggle = async (enabled: boolean) => {
-    if (enabled === totpEnabled) return;
-    
-    setTotpStatusError(null);
-    resetTotpStatus();
-    
-    if (enabled) {
-      setShowTOTPSetup(true);
-    } else {
-      setShowTOTPVerification(true);
-    }
-  };
-
-  const retryTotpStatus = async () => {
-    setTotpStatusError(null);
-    try {
-      await checkTotpStatus();
-    } catch (error: any) {
-      console.error("Error rechecking TOTP status:", error);
-      setTotpStatusError("Two-Factor Authentication is currently unavailable. Please try again later or contact support.");
-    }
-  };
-
-  const handleTOTPSetupSuccess = () => {
-    setShowTOTPSetup(false);
-    checkTotpStatus().catch(error => {
-      console.error("Error checking TOTP status after setup:", error);
-    });
-    
-    toast({
-      title: "2FA Enabled",
-      description: "Two-factor authentication has been successfully enabled for your account.",
-    });
-  };
-
-  const handleTOTPSetupCancel = () => {
-    setShowTOTPSetup(false);
-  };
-
-  const handleTOTPVerificationSuccess = async () => {
-    setShowTOTPVerification(false);
-    
-    setDisablingTOTP(true);
-    try {
-      await disableTotp();
-      await checkTotpStatus();
-    } catch (error: any) {
-      console.error("Error disabling 2FA:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to disable two-factor authentication. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setDisablingTOTP(false);
-    }
-  };
-
-  const handleTOTPVerificationCancel = () => {
-    setShowTOTPVerification(false);
-  };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -323,33 +218,6 @@ const Settings = () => {
     }
   };
 
-  const handlePasswordChange = async (values: z.infer<typeof passwordFormSchema>) => {
-    try {
-      setPasswordChangeLoading(true);
-      
-      const { error } = await supabase.auth.updateUser({
-        password: values.newPassword
-      });
-
-      if (error) throw error;
-      
-      toast({
-        title: "Password updated",
-        description: "Your password has been changed successfully.",
-      });
-      
-      passwordForm.reset();
-    } catch (error: any) {
-      toast({
-        title: "Error changing password",
-        description: error.message || "An error occurred while changing your password.",
-        variant: "destructive",
-      });
-    } finally {
-      setPasswordChangeLoading(false);
-    }
-  };
-
   const handleSavePreferences = () => {
     toast({
       title: "Preferences updated",
@@ -417,6 +285,7 @@ const Settings = () => {
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="profile" className="text-sm">My Profile</TabsTrigger>
+          <TabsTrigger value="security" className="text-sm">Security</TabsTrigger>
           <TabsTrigger value="preferences" className="text-sm">Preferences</TabsTrigger>
           <TabsTrigger value="user-roles" className="text-sm">User Roles (RACI)</TabsTrigger>
           <TabsTrigger value="api" className="text-sm">API Access</TabsTrigger>
@@ -610,195 +479,12 @@ const Settings = () => {
                   </Form>
                 </CardContent>
               </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Lock className="h-5 w-5" />
-                    Security Settings
-                  </CardTitle>
-                  <CardDescription>
-                    Configure authentication and security measures
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="two-factor" className="flex items-center gap-2">
-                        {totpEnabled ? (
-                          <ShieldCheck className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <ShieldX className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        Two-Factor Authentication
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        {totpEnabled 
-                          ? "Your account is protected with two-factor authentication" 
-                          : "Add an additional layer of security to your account"}
-                      </p>
-                      {totpStatusError && (
-                        <div className="flex items-center mt-1">
-                          <p className="text-sm text-red-500 mr-2">
-                            {totpStatusError.message || "Two-Factor Authentication is currently unavailable. Please try again later."}
-                          </p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              resetTotpStatus();
-                              checkTotpStatus().catch(error => {
-                                console.error("Error rechecking TOTP status:", error);
-                              });
-                            }} 
-                            disabled={isTotpStatusLoading}
-                          >
-                            {isTotpStatusLoading ? (
-                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                            ) : (
-                              <ArrowRight className="h-3 w-3 mr-1" />
-                            )}
-                            Retry
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    {isTotpStatusLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                    ) : (
-                      <Switch
-                        id="two-factor"
-                        checked={!!totpEnabled}
-                        onCheckedChange={e => {
-                          resetTotpStatus();
-                          handleTwoFactorAuthToggle(e);
-                        }}
-                        disabled={isTotpStatusLoading || disablingTOTP || showTOTPSetup || showTOTPVerification || !!totpStatusError}
-                      />
-                    )}
-                  </div>
-
-                  {showTOTPSetup && (
-                    <div className="mt-6 pt-4 border-t">
-                      <TOTPSetup 
-                        onSuccess={handleTOTPSetupSuccess}
-                        onCancel={handleTOTPSetupCancel}
-                      />
-                    </div>
-                  )}
-
-                  {showTOTPVerification && (
-                    <div className="mt-6 pt-4 border-t">
-                      <TOTPVerification 
-                        onSuccess={handleTOTPVerificationSuccess}
-                        onCancel={handleTOTPVerificationCancel}
-                      />
-                    </div>
-                  )}
-
-                  {totpEnabled && !showTOTPSetup && !showTOTPVerification && (
-                    <div className="mt-4 pt-4 border-t">
-                      <Alert className="bg-green-50 border-green-200">
-                        <ShieldCheck className="h-4 w-4 text-green-500" />
-                        <AlertTitle>Two-Factor Authentication is enabled</AlertTitle>
-                        <AlertDescription>
-                          Your account is protected with an additional layer of security. You will need to enter a code from your authenticator app when signing in.
-                        </AlertDescription>
-                      </Alert>
-                      
-                      <div className="mt-4">
-                        <Button 
-                          variant="outline" 
-                          className="text-red-500 border-red-200 hover:bg-red-50"
-                          onClick={() => handleTwoFactorAuthToggle(false)}
-                          disabled={disablingTOTP}
-                        >
-                          {disablingTOTP ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Disabling...
-                            </>
-                          ) : (
-                            <>
-                              <ShieldX className="mr-2 h-4 w-4" />
-                              Disable Two-Factor Authentication
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Lock className="h-5 w-5" />
-                    Change Password
-                  </CardTitle>
-                  <CardDescription>
-                    Update your password to keep your account secure
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...passwordForm}>
-                    <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField
-                          control={passwordForm.control}
-                          name="currentPassword"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Current Password</FormLabel>
-                              <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <div className="hidden md:block" />
-                        
-                        <FormField
-                          control={passwordForm.control}
-                          name="newPassword"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>New Password</FormLabel>
-                              <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={passwordForm.control}
-                          name="confirmPassword"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Confirm New Password</FormLabel>
-                              <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <Button type="submit" disabled={passwordChangeLoading}>
-                        {passwordChangeLoading ? "Updating..." : "Change Password"}
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
             </>
           )}
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-6">
+          {user && <SecurityProfile user={user} />}
         </TabsContent>
 
         <TabsContent value="preferences" className="space-y-4">

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,41 +11,14 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  totpEnabled: boolean | null;
-  checkTotpStatus: () => Promise<boolean>;
-  disableTotp: () => Promise<void>;
-  isTotpStatusLoading: boolean;
-  resetTotpStatus: () => void;
-}
-
-interface TOTPStatusResponse {
-  enabled: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Timeout utility function
-const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
-  const timeout = new Promise<never>((_, reject) => {
-    const id = setTimeout(() => {
-      clearTimeout(id);
-      reject(new Error(errorMessage));
-    }, timeoutMs);
-  });
-
-  return Promise.race([
-    promise,
-    timeout
-  ]);
-};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
-  const [isTotpStatusLoading, setIsTotpStatusLoading] = useState(false);
-  const [totpError, setTotpError] = useState<Error | null>(null);
   const { toast } = useToast();
   const [authInitialized, setAuthInitialized] = useState(false);
 
@@ -62,19 +36,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSession(newSession);
             setUser(newSession?.user ?? null);
             setLoading(false);
-            
-            // Check TOTP status on auth change - using setTimeout to avoid deadlock
-            if (newSession?.user) {
-              setTimeout(() => {
-                if (isMounted) {
-                  checkTotpStatus().catch(error => {
-                    console.error("Error checking TOTP status on auth change:", error);
-                  });
-                }
-              }, 0);
-            } else {
-              setTotpEnabled(null);
-            }
           }
         );
 
@@ -84,17 +45,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(data.session);
           setUser(data.session?.user ?? null);
           setLoading(false);
-          
-          // Check TOTP status if there's a session - using setTimeout to avoid deadlock
-          if (data.session?.user) {
-            setTimeout(() => {
-              if (isMounted) {
-                checkTotpStatus().catch(error => {
-                  console.error("Error checking initial TOTP status:", error);
-                });
-              }
-            }, 0);
-          }
         }
         
         if (isMounted) {
@@ -119,86 +69,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isMounted = false;
     };
   }, []);
-
-  const resetTotpStatus = () => {
-    setTotpError(null);
-  };
-
-  const checkTotpStatus = async (): Promise<boolean> => {
-    if (!session) return false;
-    
-    console.log("Checking TOTP status...");
-    setIsTotpStatusLoading(true);
-    setTotpError(null);
-    
-    try {
-      const statusPromise = supabase.functions.invoke<TOTPStatusResponse>('totp', {
-        body: { action: 'status' },
-      });
-      
-      const { data, error } = await withTimeout(
-        statusPromise,
-        15000, // 15 second timeout
-        "TOTP status check timed out. Please try again."
-      );
-      
-      if (error) {
-        console.error('Error checking TOTP status:', error);
-        setTotpError(error);
-        // Keep previous state on error
-        throw error;
-      }
-      
-      console.log("TOTP status result:", data);
-      setTotpEnabled(data.enabled);
-      return data.enabled;
-    } catch (error: any) {
-      console.error('Error checking TOTP status:', error);
-      setTotpError(error);
-      // Don't update state on error to maintain previous known state
-      throw error;
-    } finally {
-      setIsTotpStatusLoading(false);
-    }
-  };
-
-  const disableTotp = async (): Promise<void> => {
-    if (!session) return;
-    
-    try {
-      console.log("Disabling TOTP...");
-      
-      const disablePromise = supabase.functions.invoke('totp', {
-        body: { action: 'disable' },
-      });
-      
-      const { data, error } = await withTimeout(
-        disablePromise,
-        15000, // 15 second timeout
-        "TOTP disable operation timed out. Please try again."
-      );
-      
-      if (error) throw error;
-      
-      if (data.success) {
-        setTotpEnabled(false);
-        toast({
-          title: "2FA Disabled",
-          description: "Two-factor authentication has been successfully disabled for your account.",
-        });
-      } else if (data.error) {
-        throw new Error(data.error);
-      }
-    } catch (error: any) {
-      console.error('Error disabling TOTP:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to disable two-factor authentication. Please try again.",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -251,8 +121,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      setTotpEnabled(null);
-      
       toast({
         title: "Signed out",
         description: "You have been signed out successfully",
@@ -273,11 +141,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signUp,
     signOut,
-    totpEnabled,
-    checkTotpStatus,
-    disableTotp,
-    isTotpStatusLoading,
-    resetTotpStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
