@@ -1,7 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { totp } from 'https://esm.sh/otplib@12.0.1'
+import * as otplib from 'https://esm.sh/otplib@12.0.1'
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -53,8 +53,8 @@ serve(async (req) => {
     // Handle different actions
     if (action === 'generate') {
       // Generate a new TOTP secret
-      const secret = totp.generateSecret()
-      const otpauth = totp.keyuri(user.email || user.id, 'CyberShield', secret)
+      const secret = otplib.authenticator.generateSecret()
+      const otpauth = otplib.authenticator.keyuri(user.email || user.id, 'CyberShield', secret)
       
       return new Response(
         JSON.stringify({ secret, otpauth }),
@@ -65,7 +65,7 @@ serve(async (req) => {
       const { secret, verificationCode } = body;
       
       // Verify the provided code
-      const isValid = totp.verify({
+      const isValid = otplib.authenticator.verify({
         token: verificationCode,
         secret
       });
@@ -125,7 +125,7 @@ serve(async (req) => {
       }
       
       // Verify the provided code against the stored secret
-      const isValid = totp.verify({ 
+      const isValid = otplib.authenticator.verify({ 
         token: code, 
         secret: profile.totp_secret 
       });
