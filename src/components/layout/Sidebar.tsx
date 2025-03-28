@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,8 @@ import {
   UserCheck,
   Globe,
   ChevronDown,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Sparkles
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +32,7 @@ interface SidebarItemProps {
   text: string;
   to: string;
   active?: boolean;
+  superscriptText?: string;
 }
 
 interface SidebarProps {
@@ -43,8 +46,8 @@ interface SidebarSectionProps {
   defaultOpen?: boolean;
 }
 
-const SidebarItem = ({ icon, text, to, active }: SidebarItemProps) => {
-  if (text === "Compliance") {
+const SidebarItem = ({ icon, text, to, active, superscriptText }: SidebarItemProps) => {
+  if (text === "Compliance" || text === "Analyst Mini" || text === "LightStack") {
     return (
       <Link
         to={to}
@@ -56,7 +59,11 @@ const SidebarItem = ({ icon, text, to, active }: SidebarItemProps) => {
         )}
       >
         <div className="mr-3 transition-transform duration-200 group-hover:scale-110">{icon}</div>
-        <span className="font-medium">Compliance<sup className="text-[0.6em] font-medium align-super ml-0.5">mini</sup></span>
+        <span className="font-medium">{text}
+          {superscriptText && (
+            <sup className="text-[0.6em] font-normal align-super ml-0.5 opacity-70">{superscriptText}</sup>
+          )}
+        </span>
         {active && (
           <ChevronRight 
             size={16} 
@@ -158,7 +165,8 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     {
       icon: <ClipboardCheck size={20} className="text-cyber-green" />,
       text: "Compliance",
-      to: "/governance/compliance"
+      to: "/governance/compliance",
+      superscriptText: "mini"
     },
     {
       icon: <Award size={20} className="text-cyber-yellow" />,
@@ -172,8 +180,9 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     },
     {
       icon: <UserCheck size={20} className="text-cyber-indigo" />,
-      text: "Analyst Mini",
-      to: "/governance/customer-qbr"
+      text: "Analyst",
+      to: "/governance/customer-qbr",
+      superscriptText: "mini"
     }
   ];
 
@@ -252,13 +261,14 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               ))}
             </SidebarSection>
             
-            <SidebarSection title="Governance" defaultOpen={false}>
+            <SidebarSection title="LightStack" defaultOpen={false}>
               {governanceRoutes.map((route) => (
                 <SidebarItem
                   key={route.to}
                   icon={route.icon}
                   text={route.text}
                   to={route.to}
+                  superscriptText={route.superscriptText}
                   active={location.pathname === route.to}
                 />
               ))}
