@@ -55,6 +55,8 @@ const WorldAttackMap: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [attacks, setAttacks] = useState<AttackData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [styleLoaded, setStyleLoaded] = useState(false);
+  const pendingAttacks = useRef<AttackData[]>([]);
 
   // Function to convert a RealtimeThreat to AttackData
   const threatToAttackData = (threat: RealtimeThreat): AttackData | null => {
@@ -103,6 +105,9 @@ const WorldAttackMap: React.FC = () => {
     map.current.on('style.load', () => {
       if (!map.current) return;
       
+      setStyleLoaded(true); // Mark style as loaded
+      console.log('Map style loaded');
+      
       map.current.setFog({
         color: 'rgb(30, 30, 50)',
         'high-color': 'rgb(10, 10, 40)',
@@ -123,6 +128,15 @@ const WorldAttackMap: React.FC = () => {
       // Fetch initial data
       fetchBreachData();
       setLoading(false);
+      
+      // Process any pending attacks that came in while the style was loading
+      if (pendingAttacks.current.length > 0) {
+        console.log(`Processing ${pendingAttacks.current.length} pending attacks`);
+        pendingAttacks.current.forEach(attack => {
+          addAttackToMap(attack);
+        });
+        pendingAttacks.current = [];
+      }
     });
 
     // Start listening for real-time updates
@@ -193,9 +207,17 @@ const WorldAttackMap: React.FC = () => {
           .filter(Boolean) as AttackData[];
 
         setAttacks(formattedAttacks);
-        formattedAttacks.forEach(attack => {
-          addAttackToMap(attack);
-        });
+        
+        // Only add attacks to map if style is loaded, otherwise queue them
+        if (styleLoaded && map.current) {
+          console.log(`Adding ${formattedAttacks.length} attacks to map`);
+          formattedAttacks.forEach(attack => {
+            addAttackToMap(attack);
+          });
+        } else {
+          console.log(`Queueing ${formattedAttacks.length} attacks until style loads`);
+          pendingAttacks.current = [...pendingAttacks.current, ...formattedAttacks];
+        }
       } else {
         // If no data exists, trigger the edge function to generate some
         generateInitialData();
@@ -275,43 +297,59 @@ const WorldAttackMap: React.FC = () => {
     if (!attack) return;
 
     setAttacks(prev => [...prev, attack]);
-    addAttackToMap(attack);
+    
+    // Only add attack to map if style is loaded, otherwise queue it
+    if (styleLoaded && map.current) {
+      addAttackToMap(attack);
+    } else {
+      pendingAttacks.current.push(attack);
+    }
   };
 
   const addAttackToMap = (attack: AttackData) => {
-    if (!map.current) return;
+    if (!map.current || !styleLoaded) {
+      console.log('Map or style not ready, queueing attack:', attack.id);
+      pendingAttacks.current.push(attack);
+      return;
+    }
 
-    // Add attack arc animation
-    const arcId = `arc-${attack.id}`;
-    const pointId = `point-${attack.id}`;
-    const sourceId = `source-${attack.id}`;
+    try {
+      // Add attack arc animation
+      const arcId = `arc-${attack.id}`;
+      const pointId = `point-${attack.id}`;
+      const sourceId = `source-${attack.id}`;
 
-    // Create a curved line between source and target
-    const route = {
-      'type': 'FeatureCollection' as const,
-      'features': [
-        {
-          'type': 'Feature' as const,
-          'geometry': {
-            'type': 'LineString' as const,
-            'coordinates': [
-              attack.source,
-              [
-                attack.source[0] + (attack.target[0] - attack.source[0]) / 2,
-                attack.source[1] + (attack.target[1] - attack.source[1]) / 2 + 
-                Math.sqrt(Math.pow(attack.target[0] - attack.source[0], 2) + 
-                Math.pow(attack.target[1] - attack.source[1], 2)) * 0.2
-              ],
-              attack.target
-            ]
-          },
-          'properties': {}
-        }
-      ]
-    };
+      // Skip if this attack is already on the map
+      if (map.current.getSource(arcId)) {
+        console.log(`Attack ${attack.id} already on map, skipping`);
+        return;
+      }
 
-    // Add source and layer for arc
-    if (!map.current.getSource(arcId)) {
+      // Create a curved line between source and target
+      const route = {
+        'type': 'FeatureCollection' as const,
+        'features': [
+          {
+            'type': 'Feature' as const,
+            'geometry': {
+              'type': 'LineString' as const,
+              'coordinates': [
+                attack.source,
+                [
+                  attack.source[0] + (attack.target[0] - attack.source[0]) / 2,
+                  attack.source[1] + (attack.target[1] - attack.source[1]) / 2 + 
+                  Math.sqrt(Math.pow(attack.target[0] - attack.source[0], 2) + 
+                  Math.pow(attack.target[1] - attack.source[1], 2)) * 0.2
+                ],
+                attack.target
+              ]
+            },
+            'properties': {}
+          }
+        ]
+      };
+
+      // Add source and layer for arc
       map.current.addSource(arcId, {
         'type': 'geojson',
         'data': route
@@ -474,6 +512,8 @@ const WorldAttackMap: React.FC = () => {
           'circle-opacity': 0.6
         }
       });
+    } catch (error) {
+      console.error('Error adding attack to map:', error, attack);
     }
   };
 
