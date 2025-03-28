@@ -1,5 +1,5 @@
 
-# Welcome to your Cyber CSO-VASU project
+# Welcome to your CyberCSO-Vasu codebase
 
 ## Project info
 
