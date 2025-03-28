@@ -23,7 +23,7 @@ import Connectors from "./pages/system/Connectors";
 import Compliance from "./pages/governance/Compliance";
 import ThreatInformedDefense from "./pages/governance/MaturityBenchmark";
 import BreachBoard from "./pages/governance/BreachBoard";
-import CustomerQBR from "./pages/governance/CustomerQBR";
+import AnalystMini from "./pages/governance/CustomerQBR"; // Component renamed but file path stays the same
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,7 +58,7 @@ const App = () => (
                 <Route path="/governance/compliance" element={<ProtectedRoute><Compliance /></ProtectedRoute>} />
                 <Route path="/governance/maturity-benchmark" element={<ProtectedRoute><ThreatInformedDefense /></ProtectedRoute>} />
                 <Route path="/governance/breach-board" element={<ProtectedRoute><BreachBoard /></ProtectedRoute>} />
-                <Route path="/governance/customer-qbr" element={<ProtectedRoute><CustomerQBR /></ProtectedRoute>} />
+                <Route path="/governance/customer-qbr" element={<ProtectedRoute><AnalystMini /></ProtectedRoute>} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

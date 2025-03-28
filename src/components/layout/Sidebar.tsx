@@ -172,7 +172,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     },
     {
       icon: <UserCheck size={20} className="text-cyber-indigo" />,
-      text: "Customer QBR & NPS",
+      text: "Analyst Mini",
       to: "/governance/customer-qbr"
     }
   ];
