@@ -30,7 +30,7 @@ const ComplianceFilters: React.FC = () => {
               <ToggleGroupItem 
                 key={category} 
                 value={category}
-                pressed={visibleCategories.includes(category)}
+                aria-pressed={visibleCategories.includes(category)}
                 onClick={() => toggleCategory(category)}
                 className="flex items-center gap-1 text-xs"
               >
