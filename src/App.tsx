@@ -21,7 +21,7 @@ import Connectors from "./pages/system/Connectors";
 
 // Import governance pages
 import Compliance from "./pages/governance/Compliance";
-import MaturityBenchmark from "./pages/governance/MaturityBenchmark";
+import ThreatInformedDefense from "./pages/governance/MaturityBenchmark";
 import BreachBoard from "./pages/governance/BreachBoard";
 import CustomerQBR from "./pages/governance/CustomerQBR";
 
@@ -56,7 +56,7 @@ const App = () => (
                 
                 {/* Governance Routes */}
                 <Route path="/governance/compliance" element={<ProtectedRoute><Compliance /></ProtectedRoute>} />
-                <Route path="/governance/maturity-benchmark" element={<ProtectedRoute><MaturityBenchmark /></ProtectedRoute>} />
+                <Route path="/governance/maturity-benchmark" element={<ProtectedRoute><ThreatInformedDefense /></ProtectedRoute>} />
                 <Route path="/governance/breach-board" element={<ProtectedRoute><BreachBoard /></ProtectedRoute>} />
                 <Route path="/governance/customer-qbr" element={<ProtectedRoute><CustomerQBR /></ProtectedRoute>} />
                 

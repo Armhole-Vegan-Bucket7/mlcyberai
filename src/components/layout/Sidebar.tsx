@@ -140,7 +140,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     },
     {
       icon: <Award size={20} className="text-cyber-yellow" />,
-      text: "Maturity Benchmark",
+      text: "Threat Informed Defense",
       to: "/governance/maturity-benchmark"
     },
     {
