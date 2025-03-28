@@ -1,14 +1,15 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Initialize mapbox with a default public token - should be replaced with an environment variable in production
-mapboxgl.accessToken = 'pk.eyJ1IjoiY3liZXJtb25pdG9yIiwiYSI6ImNsbjUyZXI3ejAxZzAya3BnaDVxNDR1MnEifQ.OBIo_A64nBNaQWk-LQebeQ';
+// Initialize with a placeholder - will be replaced with user input
+let mapboxAccessToken = '';
 
 interface AttackData {
   id: string;
@@ -62,6 +63,41 @@ const WorldAttackMap: React.FC = () => {
   const pendingAttacks = useRef<AttackData[]>([]);
   const mapInitTimeout = useRef<number | null>(null);
   const mapLoadTimeout = useRef<number | null>(null);
+  const [mapboxToken, setMapboxToken] = useState('');
+  const [tokenEntered, setTokenEntered] = useState(false);
+  
+  useEffect(() => {
+    // Try to retrieve token from localStorage
+    const savedToken = localStorage.getItem('mapbox-token');
+    if (savedToken) {
+      setMapboxToken(savedToken);
+      mapboxAccessToken = savedToken;
+      setTokenEntered(true);
+    }
+  }, []);
+
+  const handleTokenSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mapboxToken.trim()) {
+      toast({
+        title: "Token Required",
+        description: "Please enter a valid Mapbox token.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Save token to localStorage
+    localStorage.setItem('mapbox-token', mapboxToken);
+    mapboxAccessToken = mapboxToken;
+    setTokenEntered(true);
+    setMapInitAttempt(prev => prev + 1);
+    
+    toast({
+      title: "Token Saved",
+      description: "Your Mapbox token has been saved.",
+    });
+  };
   
   // Function to convert a RealtimeThreat to AttackData
   const threatToAttackData = (threat: RealtimeThreat): AttackData | null => {
@@ -129,7 +165,7 @@ const WorldAttackMap: React.FC = () => {
 
   // Initialize the map
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || !tokenEntered || !mapboxToken) return;
 
     // Set a timeout to detect if map initialization takes too long
     mapInitTimeout.current = window.setTimeout(handleMapInitError, 10000); // 10 seconds timeout
@@ -145,6 +181,9 @@ const WorldAttackMap: React.FC = () => {
 
     try {
       console.log("Initializing map...");
+      
+      // Set the access token
+      mapboxgl.accessToken = mapboxToken;
       
       // Initialize map with minimal configuration for faster loading
       map.current = new mapboxgl.Map({
@@ -317,7 +356,7 @@ const WorldAttackMap: React.FC = () => {
         clearTimeout(mapLoadTimeout.current);
       }
     }
-  }, [mapInitAttempt]); // Re-initialize map when retry is attempted
+  }, [mapInitAttempt, tokenEntered, mapboxToken]); // Re-initialize map when retry is attempted or token is entered
 
   const fetchBreachData = async () => {
     try {
@@ -604,6 +643,44 @@ const WorldAttackMap: React.FC = () => {
     }
   };
 
+  if (!tokenEntered) {
+    return (
+      <div className="relative w-full h-[calc(100vh-13rem)] rounded-lg border overflow-hidden bg-slate-950 flex items-center justify-center">
+        <Card className="w-[400px] max-w-[90%]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-cyber-blue" />
+              Mapbox API Token Required
+            </CardTitle>
+            <CardDescription>
+              Please enter your Mapbox public token to display the attack map.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleTokenSubmit}>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-500">
+                  You need to create a free account at <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-cyber-blue hover:underline">Mapbox.com</a> and get your public token.
+                </p>
+                <Input
+                  placeholder="Enter your Mapbox public token"
+                  value={mapboxToken}
+                  onChange={(e) => setMapboxToken(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full">
+                Save Token & Load Map
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-[calc(100vh-13rem)] rounded-lg border overflow-hidden bg-slate-950">
       {loading ? (
@@ -618,14 +695,23 @@ const WorldAttackMap: React.FC = () => {
           <AlertTriangle className="h-12 w-12 text-cyber-red mb-4" />
           <h3 className="text-xl font-bold text-white mb-2">Map Loading Error</h3>
           <p className="text-white text-center mb-6 max-w-md">{loadError}</p>
-          <Button 
-            variant="outline" 
-            onClick={retryMapLoading}
-            className="bg-black/60 hover:bg-black/80 text-white border-gray-700"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Retry Loading Map
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button 
+              variant="outline" 
+              onClick={retryMapLoading}
+              className="bg-black/60 hover:bg-black/80 text-white border-gray-700"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry Loading Map
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setTokenEntered(false)}
+              className="bg-black/60 hover:bg-black/80 text-white border-gray-700"
+            >
+              Change Mapbox Token
+            </Button>
+          </div>
           <p className="text-gray-400 text-xs mt-4 text-center max-w-md">
             If this issue persists, please check your network connection or try using a different browser.
           </p>
@@ -634,19 +720,37 @@ const WorldAttackMap: React.FC = () => {
         <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-950/90">
           <Loader2 className="h-8 w-8 animate-spin text-cyber-blue mb-4" />
           <p className="text-white">Map is taking longer than expected to load...</p>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={retryMapLoading}
-            className="mt-4 bg-black/60 hover:bg-black/80 text-white border-gray-700"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Retry Loading
-          </Button>
+          <div className="flex gap-3 mt-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={retryMapLoading}
+              className="bg-black/60 hover:bg-black/80 text-white border-gray-700"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry Loading
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setTokenEntered(false)}
+              className="bg-black/60 hover:bg-black/80 text-white border-gray-700"
+            >
+              Change Token
+            </Button>
+          </div>
         </div>
       ) : null}
       <div ref={mapContainer} className="w-full h-full" />
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => setTokenEntered(false)}
+          className="bg-black/60 hover:bg-black/80 text-white border-gray-700"
+        >
+          Change Token
+        </Button>
         <Button 
           variant="outline" 
           size="sm"
