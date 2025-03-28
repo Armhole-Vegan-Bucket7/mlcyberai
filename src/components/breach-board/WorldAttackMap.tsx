@@ -4,16 +4,16 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Initialize mapbox
+// Initialize mapbox with a default public token - should be replaced with an environment variable in production
 mapboxgl.accessToken = 'pk.eyJ1IjoiY3liZXJtb25pdG9yIiwiYSI6ImNsbjUyZXI3ejAxZzAya3BnaDVxNDR1MnEifQ.OBIo_A64nBNaQWk-LQebeQ';
 
 interface AttackData {
   id: string;
-  source: [number, number]; // Explicitly typed as tuple
-  target: [number, number]; // Explicitly typed as tuple
+  source: [number, number];
+  target: [number, number];
   organization: string;
   attack_vector: string;
   severity: string;
@@ -54,12 +54,15 @@ const WorldAttackMap: React.FC = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [loading, setLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [mapInitAttempt, setMapInitAttempt] = useState(0);
   const [attacks, setAttacks] = useState<AttackData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [styleLoaded, setStyleLoaded] = useState(false);
   const pendingAttacks = useRef<AttackData[]>([]);
   const mapInitTimeout = useRef<number | null>(null);
-
+  const mapLoadTimeout = useRef<number | null>(null);
+  
   // Function to convert a RealtimeThreat to AttackData
   const threatToAttackData = (threat: RealtimeThreat): AttackData | null => {
     if (!threat.source_lat || !threat.source_lng || !threat.target_lat || !threat.target_lng) {
@@ -83,21 +86,67 @@ const WorldAttackMap: React.FC = () => {
   const handleMapInitError = () => {
     console.error("Map initialization timeout");
     setLoading(false);
-    toast({
-      title: "Map Loading Error",
-      description: "There was an issue loading the map. Please refresh the page.",
-      variant: "destructive"
-    });
+    setLoadError("Map initialization timed out. Please try refreshing the page.");
+    
+    // Make sure we clean up any incomplete map instance
+    if (map.current) {
+      try {
+        map.current.remove();
+        map.current = null;
+      } catch (err) {
+        console.error("Error cleaning up map instance:", err);
+      }
+    }
   };
 
+  // Reset the map and try loading again
+  const retryMapLoading = () => {
+    if (map.current) {
+      try {
+        map.current.remove();
+        map.current = null;
+      } catch (err) {
+        console.error("Error removing map:", err);
+      }
+    }
+    
+    setLoading(true);
+    setMapLoaded(false);
+    setLoadError(null);
+    setStyleLoaded(false);
+    setMapInitAttempt(prev => prev + 1);
+    
+    // Clear any pending timeouts
+    if (mapInitTimeout.current) {
+      window.clearTimeout(mapInitTimeout.current);
+      mapInitTimeout.current = null;
+    }
+    if (mapLoadTimeout.current) {
+      window.clearTimeout(mapLoadTimeout.current);
+      mapLoadTimeout.current = null;
+    }
+  };
+
+  // Initialize the map
   useEffect(() => {
     if (!mapContainer.current) return;
 
     // Set a timeout to detect if map initialization takes too long
-    mapInitTimeout.current = window.setTimeout(handleMapInitError, 15000); // 15 seconds timeout
+    mapInitTimeout.current = window.setTimeout(handleMapInitError, 10000); // 10 seconds timeout
+
+    // Set another timeout for the overall map loading including style
+    mapLoadTimeout.current = window.setTimeout(() => {
+      if (!styleLoaded) {
+        console.error("Map style loading timeout");
+        setLoadError("Map style loading timed out. Please check your network connection and try again.");
+        setLoading(false);
+      }
+    }, 15000); // 15 seconds timeout for style loading
 
     try {
-      // Initialize map
+      console.log("Initializing map...");
+      
+      // Initialize map with minimal configuration for faster loading
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/dark-v11',
@@ -106,6 +155,11 @@ const WorldAttackMap: React.FC = () => {
         center: [30, 15],
         pitch: 45,
         fadeDuration: 0, // Immediate rendering, no fade animations
+        attributionControl: false,
+        preserveDrawingBuffer: false,
+        renderWorldCopies: false,
+        maxZoom: 8,
+        minZoom: 1,
       });
 
       // Add navigation controls
@@ -126,19 +180,26 @@ const WorldAttackMap: React.FC = () => {
         console.log('Map style loaded successfully');
         setStyleLoaded(true); // Mark style as loaded
         
-        // Clear the timeout since map loaded successfully
+        // Clear the timeouts since map loaded successfully
         if (mapInitTimeout.current) {
           clearTimeout(mapInitTimeout.current);
+          mapInitTimeout.current = null;
+        }
+        
+        if (mapLoadTimeout.current) {
+          clearTimeout(mapLoadTimeout.current);
+          mapLoadTimeout.current = null;
         }
         
         try {
+          // Add simplified fog for better performance
           map.current.setFog({
             color: 'rgb(30, 30, 50)',
             'high-color': 'rgb(10, 10, 40)',
             'horizon-blend': 0.4,
           });
 
-          // Add glow effect
+          // Add glow effect with minimal settings
           map.current.addLayer({
             id: 'sky',
             type: 'sky',
@@ -150,6 +211,7 @@ const WorldAttackMap: React.FC = () => {
           });
         } catch (error) {
           console.error('Error setting map fog or sky:', error);
+          // Continue without these effects
         }
 
         // Fetch initial data
@@ -175,11 +237,8 @@ const WorldAttackMap: React.FC = () => {
       // Listen for map errors
       map.current.on('error', (e) => {
         console.error('Map error:', e);
-        toast({
-          title: "Map Error",
-          description: "There was an issue with the map. Please refresh the page.",
-          variant: "destructive"
-        });
+        setLoadError(`Map error: ${e.error?.message || 'Unknown error'}`);
+        setLoading(false);
       });
 
       // Start listening for real-time updates
@@ -196,12 +255,12 @@ const WorldAttackMap: React.FC = () => {
         )
         .subscribe();
 
-      // Auto-rotation
-      const secondsPerRevolution = 180;
+      // Auto-rotation with simplified logic for better performance
       let userInteracting = false;
+      const secondsPerRevolution = 240;
 
       function spinGlobe() {
-        if (!map.current || userInteracting) return;
+        if (!map.current || userInteracting || !styleLoaded) return;
         
         const center = map.current.getCenter();
         center.lng -= 360 / secondsPerRevolution / 60;
@@ -210,10 +269,14 @@ const WorldAttackMap: React.FC = () => {
         requestAnimationFrame(spinGlobe);
       }
 
-      // Start spinning
-      spinGlobe();
+      // Start spinning only after style loads to avoid performance issues during loading
+      map.current.once('idle', () => {
+        if (styleLoaded) {
+          spinGlobe();
+        }
+      });
 
-      // Interaction handlers
+      // Simplified interaction handlers
       map.current.on('mousedown', () => {
         userInteracting = true;
       });
@@ -224,27 +287,37 @@ const WorldAttackMap: React.FC = () => {
 
       // Setup interval to fetch new data every 10 minutes
       const intervalId = setInterval(() => {
-        refreshData();
+        if (mapLoaded && styleLoaded) {
+          refreshData();
+        }
       }, 10 * 60 * 1000); // 10 minutes
 
       return () => {
-        map.current?.remove();
+        if (map.current) {
+          map.current.remove();
+        }
         supabase.removeChannel(channel);
         clearInterval(intervalId);
         if (mapInitTimeout.current) {
           clearTimeout(mapInitTimeout.current);
         }
+        if (mapLoadTimeout.current) {
+          clearTimeout(mapLoadTimeout.current);
+        }
       };
     } catch (error) {
       console.error('Error initializing map:', error);
       setLoading(false);
-      toast({
-        title: "Map Initialization Error",
-        description: "Failed to initialize the map. Please refresh the page.",
-        variant: "destructive"
-      });
+      setLoadError(`Failed to initialize the map: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      if (mapInitTimeout.current) {
+        clearTimeout(mapInitTimeout.current);
+      }
+      if (mapLoadTimeout.current) {
+        clearTimeout(mapLoadTimeout.current);
+      }
     }
-  }, []);
+  }, [mapInitAttempt]); // Re-initialize map when retry is attempted
 
   const fetchBreachData = async () => {
     try {
@@ -494,47 +567,6 @@ const WorldAttackMap: React.FC = () => {
         }
       });
 
-      // Add pulsing effect
-      let size = 15;
-      const pulsingEffect = () => {
-        if (!map.current || !map.current.getLayer(pointId)) return;
-        
-        size = size === 15 ? 20 : 15;
-        map.current.setPaintProperty(pointId, 'circle-radius', size);
-        setTimeout(pulsingEffect, 1000);
-      };
-      
-      pulsingEffect();
-
-      // Add a popup on hover
-      const popup = new mapboxgl.Popup({
-        closeButton: false,
-        closeOnClick: false
-      });
-
-      map.current.on('mouseenter', pointId, (e) => {
-        if (!map.current || !e.features) return;
-        
-        map.current.getCanvas().style.cursor = 'pointer';
-        
-        const feature = e.features[0];
-        if (feature && feature.geometry.type === 'Point') {
-          const coordinates = (feature.geometry as GeoJSON.Point).coordinates.slice() as [number, number];
-          const description = feature.properties?.description;
-          
-          if (description) {
-            popup.setLngLat(coordinates).setHTML(description).addTo(map.current);
-          }
-        }
-      });
-      
-      map.current.on('mouseleave', pointId, () => {
-        if (!map.current) return;
-        
-        map.current.getCanvas().style.cursor = '';
-        popup.remove();
-      });
-
       // Create source point geojson
       const sourcePointGeoJson = {
         'type': 'FeatureCollection' as const,
@@ -576,7 +608,27 @@ const WorldAttackMap: React.FC = () => {
     <div className="relative w-full h-[calc(100vh-13rem)] rounded-lg border overflow-hidden bg-slate-950">
       {loading ? (
         <div className="absolute inset-0 flex items-center justify-center z-10">
-          <Loader2 className="h-8 w-8 animate-spin text-cyber-blue" />
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-cyber-blue" />
+            <p className="text-white text-sm">Loading map data...</p>
+          </div>
+        </div>
+      ) : loadError ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-950/90 p-6">
+          <AlertTriangle className="h-12 w-12 text-cyber-red mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2">Map Loading Error</h3>
+          <p className="text-white text-center mb-6 max-w-md">{loadError}</p>
+          <Button 
+            variant="outline" 
+            onClick={retryMapLoading}
+            className="bg-black/60 hover:bg-black/80 text-white border-gray-700"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Retry Loading Map
+          </Button>
+          <p className="text-gray-400 text-xs mt-4 text-center max-w-md">
+            If this issue persists, please check your network connection or try using a different browser.
+          </p>
         </div>
       ) : !mapLoaded ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-950/90">
@@ -585,11 +637,11 @@ const WorldAttackMap: React.FC = () => {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => window.location.reload()}
+            onClick={retryMapLoading}
             className="mt-4 bg-black/60 hover:bg-black/80 text-white border-gray-700"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh Page
+            Retry Loading
           </Button>
         </div>
       ) : null}
