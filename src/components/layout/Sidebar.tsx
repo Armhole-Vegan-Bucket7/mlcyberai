@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -47,7 +46,7 @@ interface SidebarSectionProps {
 }
 
 const SidebarItem = ({ icon, text, to, active, superscriptText }: SidebarItemProps) => {
-  if (text === "Compliance" || text === "Analyst Mini" || text === "LightStack") {
+  if (text === "Compliance" || text === "Analyst" || text === "LightStack") {
     return (
       <Link
         to={to}
