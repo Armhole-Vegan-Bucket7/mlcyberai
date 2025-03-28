@@ -53,10 +53,12 @@ const WorldAttackMap: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mapLoaded, setMapLoaded] = useState(false);
   const [attacks, setAttacks] = useState<AttackData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [styleLoaded, setStyleLoaded] = useState(false);
   const pendingAttacks = useRef<AttackData[]>([]);
+  const mapInitTimeout = useRef<number | null>(null);
 
   // Function to convert a RealtimeThreat to AttackData
   const threatToAttackData = (threat: RealtimeThreat): AttackData | null => {
@@ -77,118 +79,171 @@ const WorldAttackMap: React.FC = () => {
     };
   };
 
+  // Handle map initialization errors
+  const handleMapInitError = () => {
+    console.error("Map initialization timeout");
+    setLoading(false);
+    toast({
+      title: "Map Loading Error",
+      description: "There was an issue loading the map. Please refresh the page.",
+      variant: "destructive"
+    });
+  };
+
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Initialize map
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      projection: 'globe',
-      zoom: 1.5,
-      center: [30, 15],
-      pitch: 45,
-    });
+    // Set a timeout to detect if map initialization takes too long
+    mapInitTimeout.current = window.setTimeout(handleMapInitError, 15000); // 15 seconds timeout
 
-    // Add navigation controls
-    map.current.addControl(
-      new mapboxgl.NavigationControl({
-        visualizePitch: true,
-      }),
-      'top-right'
-    );
-
-    // Disable scroll zoom for smoother experience
-    map.current.scrollZoom.disable();
-
-    // Add atmosphere and fog effects
-    map.current.on('style.load', () => {
-      if (!map.current) return;
-      
-      setStyleLoaded(true); // Mark style as loaded
-      console.log('Map style loaded');
-      
-      map.current.setFog({
-        color: 'rgb(30, 30, 50)',
-        'high-color': 'rgb(10, 10, 40)',
-        'horizon-blend': 0.4,
+    try {
+      // Initialize map
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/dark-v11',
+        projection: 'globe',
+        zoom: 1.5,
+        center: [30, 15],
+        pitch: 45,
+        fadeDuration: 0, // Immediate rendering, no fade animations
       });
 
-      // Add glow effect
-      map.current.addLayer({
-        id: 'sky',
-        type: 'sky',
-        paint: {
-          'sky-type': 'atmosphere',
-          'sky-atmosphere-sun': [0.0, 90.0],
-          'sky-atmosphere-sun-intensity': 15,
+      // Add navigation controls
+      map.current.addControl(
+        new mapboxgl.NavigationControl({
+          visualizePitch: true,
+        }),
+        'top-right'
+      );
+
+      // Disable scroll zoom for smoother experience
+      map.current.scrollZoom.disable();
+
+      // Add atmosphere and fog effects
+      map.current.on('style.load', () => {
+        if (!map.current) return;
+        
+        console.log('Map style loaded successfully');
+        setStyleLoaded(true); // Mark style as loaded
+        
+        // Clear the timeout since map loaded successfully
+        if (mapInitTimeout.current) {
+          clearTimeout(mapInitTimeout.current);
+        }
+        
+        try {
+          map.current.setFog({
+            color: 'rgb(30, 30, 50)',
+            'high-color': 'rgb(10, 10, 40)',
+            'horizon-blend': 0.4,
+          });
+
+          // Add glow effect
+          map.current.addLayer({
+            id: 'sky',
+            type: 'sky',
+            paint: {
+              'sky-type': 'atmosphere',
+              'sky-atmosphere-sun': [0.0, 90.0],
+              'sky-atmosphere-sun-intensity': 15,
+            }
+          });
+        } catch (error) {
+          console.error('Error setting map fog or sky:', error);
+        }
+
+        // Fetch initial data
+        fetchBreachData();
+        setLoading(false);
+        setMapLoaded(true);
+        
+        // Process any pending attacks that came in while the style was loading
+        if (pendingAttacks.current.length > 0) {
+          console.log(`Processing ${pendingAttacks.current.length} pending attacks`);
+          pendingAttacks.current.forEach(attack => {
+            addAttackToMap(attack);
+          });
+          pendingAttacks.current = [];
         }
       });
 
-      // Fetch initial data
-      fetchBreachData();
-      setLoading(false);
-      
-      // Process any pending attacks that came in while the style was loading
-      if (pendingAttacks.current.length > 0) {
-        console.log(`Processing ${pendingAttacks.current.length} pending attacks`);
-        pendingAttacks.current.forEach(attack => {
-          addAttackToMap(attack);
+      // Listen for map load completion
+      map.current.on('load', () => {
+        console.log('Map base loaded');
+      });
+
+      // Listen for map errors
+      map.current.on('error', (e) => {
+        console.error('Map error:', e);
+        toast({
+          title: "Map Error",
+          description: "There was an issue with the map. Please refresh the page.",
+          variant: "destructive"
         });
-        pendingAttacks.current = [];
+      });
+
+      // Start listening for real-time updates
+      const channel = supabase
+        .channel('realtime-threats-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'realtime_threats'
+          },
+          handleRealtimeUpdate
+        )
+        .subscribe();
+
+      // Auto-rotation
+      const secondsPerRevolution = 180;
+      let userInteracting = false;
+
+      function spinGlobe() {
+        if (!map.current || userInteracting) return;
+        
+        const center = map.current.getCenter();
+        center.lng -= 360 / secondsPerRevolution / 60;
+        map.current.easeTo({ center, duration: 0 });
+        
+        requestAnimationFrame(spinGlobe);
       }
-    });
 
-    // Start listening for real-time updates
-    const channel = supabase
-      .channel('realtime-threats-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'realtime_threats'
-        },
-        handleRealtimeUpdate
-      )
-      .subscribe();
+      // Start spinning
+      spinGlobe();
 
-    // Auto-rotation
-    const secondsPerRevolution = 180;
-    let userInteracting = false;
-
-    function spinGlobe() {
-      if (!map.current || userInteracting) return;
+      // Interaction handlers
+      map.current.on('mousedown', () => {
+        userInteracting = true;
+      });
       
-      const center = map.current.getCenter();
-      center.lng -= 360 / secondsPerRevolution / 60;
-      map.current.easeTo({ center, duration: 0 });
-      
-      requestAnimationFrame(spinGlobe);
+      map.current.on('mouseup', () => {
+        userInteracting = false;
+      });
+
+      // Setup interval to fetch new data every 10 minutes
+      const intervalId = setInterval(() => {
+        refreshData();
+      }, 10 * 60 * 1000); // 10 minutes
+
+      return () => {
+        map.current?.remove();
+        supabase.removeChannel(channel);
+        clearInterval(intervalId);
+        if (mapInitTimeout.current) {
+          clearTimeout(mapInitTimeout.current);
+        }
+      };
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      setLoading(false);
+      toast({
+        title: "Map Initialization Error",
+        description: "Failed to initialize the map. Please refresh the page.",
+        variant: "destructive"
+      });
     }
-
-    // Start spinning
-    spinGlobe();
-
-    // Interaction handlers
-    map.current.on('mousedown', () => {
-      userInteracting = true;
-    });
-    
-    map.current.on('mouseup', () => {
-      userInteracting = false;
-    });
-
-    // Setup interval to fetch new data every 10 minutes
-    const intervalId = setInterval(() => {
-      refreshData();
-    }, 10 * 60 * 1000); // 10 minutes
-
-    return () => {
-      map.current?.remove();
-      supabase.removeChannel(channel);
-      clearInterval(intervalId);
-    };
   }, []);
 
   const fetchBreachData = async () => {
@@ -520,8 +575,22 @@ const WorldAttackMap: React.FC = () => {
   return (
     <div className="relative w-full h-[calc(100vh-13rem)] rounded-lg border overflow-hidden bg-slate-950">
       {loading ? (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center z-10">
           <Loader2 className="h-8 w-8 animate-spin text-cyber-blue" />
+        </div>
+      ) : !mapLoaded ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-950/90">
+          <Loader2 className="h-8 w-8 animate-spin text-cyber-blue mb-4" />
+          <p className="text-white">Map is taking longer than expected to load...</p>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.location.reload()}
+            className="mt-4 bg-black/60 hover:bg-black/80 text-white border-gray-700"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh Page
+          </Button>
         </div>
       ) : null}
       <div ref={mapContainer} className="w-full h-full" />
