@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -132,17 +133,17 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const mainRoutes = [
     { 
       icon: <LayoutDashboard size={20} className="text-cyber-blue" />, 
-      text: "CyberPosture", 
+      text: "Signal Bench", 
       to: "/" 
     },
     { 
       icon: <Shield size={20} className="text-cyber-indigo" />, 
-      text: "SOC Overview", 
+      text: "SecOps Bench", 
       to: "/soc" 
     },
     { 
       icon: <Globe size={20} className="text-cyber-purple" />, 
-      text: "Customer Profile", 
+      text: "Customer Insights", 
       to: "/soc-profile" 
     },
   ];
