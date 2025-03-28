@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -45,6 +44,29 @@ interface SidebarSectionProps {
 }
 
 const SidebarItem = ({ icon, text, to, active }: SidebarItemProps) => {
+  if (text === "Compliance") {
+    return (
+      <Link
+        to={to}
+        className={cn(
+          "flex items-center py-2 px-4 rounded-lg transition-all duration-300",
+          "hover:bg-cyber-blue/10 text-cyber-gray-600 dark:text-cyber-gray-300",
+          "transform hover:translate-x-1 text-xs uppercase tracking-wide",
+          active && "bg-cyber-blue/10 text-cyber-blue dark:text-cyber-blue font-medium"
+        )}
+      >
+        <div className="mr-3 transition-transform duration-200 group-hover:scale-110">{icon}</div>
+        <span className="font-medium">Compliance<sup className="text-[0.6em] font-medium align-super ml-0.5">mini</sup></span>
+        {active && (
+          <ChevronRight 
+            size={16} 
+            className="ml-auto opacity-70 animate-fade-in" 
+          />
+        )}
+      </Link>
+    );
+  }
+  
   return (
     <Link
       to={to}

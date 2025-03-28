@@ -39,10 +39,10 @@ const ComplianceDashboard: React.FC = () => {
   }, [closeAllAgents]);
 
   return (
-    <div ref={dashboardRef} className="flex flex-col h-full">
+    <div ref={dashboardRef} className="flex flex-col h-full gap-4">
       <ComplianceFilters />
       
-      <div className="flex-1 relative mt-4 rounded-lg border bg-card">
+      <div className="flex-1 relative rounded-lg border bg-card/80 backdrop-blur-sm shadow-lg">
         <ComplianceVisualization agents={filteredAgents} />
         
         <AnimatePresence>
@@ -54,7 +54,7 @@ const ComplianceDashboard: React.FC = () => {
               transition={{ duration: 0.2 }}
               className={`absolute ${focusMode ? 'inset-0' : 'bottom-4 right-4 max-w-md'} 
                           z-10 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg 
-                          border border-border`}
+                          border border-cyber-blue/20`}
             >
               <ComplianceAgentModal agent={expandedAgent} />
             </motion.div>
