@@ -42,7 +42,7 @@ const ComplianceDashboard: React.FC = () => {
     <div ref={dashboardRef} className="flex flex-col h-full gap-4">
       <ComplianceFilters />
       
-      <div className="flex-1 relative rounded-lg border bg-card/80 backdrop-blur-sm shadow-lg">
+      <div className="flex-1 relative rounded-lg border border-cyber-blue/20 bg-gradient-to-br from-cyber-gray-900/95 to-cyber-gray-800/95 backdrop-blur-sm shadow-lg">
         <ComplianceVisualization agents={filteredAgents} />
         
         <AnimatePresence>
@@ -53,7 +53,7 @@ const ComplianceDashboard: React.FC = () => {
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.2 }}
               className={`absolute ${focusMode ? 'inset-0' : 'bottom-4 right-4 max-w-md'} 
-                          z-10 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg 
+                          z-10 bg-cyber-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg 
                           border border-cyber-blue/20`}
             >
               <ComplianceAgentModal agent={expandedAgent} />

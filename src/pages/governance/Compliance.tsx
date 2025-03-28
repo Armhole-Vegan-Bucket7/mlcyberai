@@ -9,6 +9,7 @@ const Compliance = () => {
     <PageLayout 
       title="Compliance Mini Center" 
       description="Interactive AI agents tailored to each compliance framework"
+      className="bg-gradient-to-br from-cyber-gray-900 to-cyber-gray-800"
     >
       <ComplianceAgentProvider>
         <ComplianceDashboard />

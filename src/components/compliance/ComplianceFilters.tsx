@@ -17,12 +17,12 @@ const ComplianceFilters: React.FC = () => {
   } = useComplianceAgents();
 
   return (
-    <Card className="p-2 sticky top-0 z-10 backdrop-blur-sm bg-card/95 shadow-md border-cyber-blue/10">
+    <Card className="p-2 sticky top-0 z-10 backdrop-blur-sm bg-cyber-gray-800/95 shadow-md border-cyber-blue/20">
       <CardContent className="p-2">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-cyber-blue" />
-            <span className="text-sm font-medium">Filter Categories:</span>
+            <span className="text-sm font-medium text-white">Filter Categories:</span>
           </div>
           
           <ToggleGroup 
@@ -36,7 +36,10 @@ const ComplianceFilters: React.FC = () => {
                 value={category}
                 aria-pressed={visibleCategories.includes(category)}
                 onClick={() => toggleCategory(category)}
-                className="flex items-center gap-1 text-xs transition-colors duration-300 hover:bg-cyber-blue/10"
+                className={`flex items-center gap-1 text-xs transition-colors duration-300 
+                  ${visibleCategories.includes(category) 
+                    ? 'bg-cyber-blue/20 text-white border-cyber-blue/50 hover:bg-cyber-blue/30' 
+                    : 'text-cyber-gray-400 hover:bg-cyber-gray-700/50'}`}
               >
                 {visibleCategories.includes(category) ? 
                   <Eye className="h-3 w-3 text-cyber-blue" /> : 
@@ -54,7 +57,7 @@ const ComplianceFilters: React.FC = () => {
                 checked={focusMode}
                 onCheckedChange={toggleFocusMode}
               />
-              <Label htmlFor="focus-mode" className="flex items-center gap-1 text-sm">
+              <Label htmlFor="focus-mode" className="flex items-center gap-1 text-sm text-white">
                 <Focus className="h-3 w-3 text-cyber-indigo" />
                 Focus Mode
               </Label>
