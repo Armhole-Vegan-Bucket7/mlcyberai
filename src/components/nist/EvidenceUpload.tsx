@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { Upload, X, FileText } from 'lucide-react';
+import { Upload, X, FileText, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface EvidenceUploadProps {
   assessmentData: any;
@@ -31,6 +32,27 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
   const [activeFunction, setActiveFunction] = useState('Identify');
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+  const [storageError, setStorageError] = useState<string | null>(null);
+
+  // Check if the trust_evidence bucket exists on component mount
+  useEffect(() => {
+    const checkBucket = async () => {
+      try {
+        const { data, error } = await supabase.storage.getBucket('trust_evidence');
+        if (error) {
+          console.error('Storage bucket check error:', error);
+          setStorageError('Storage configuration issue. Please contact support.');
+        } else {
+          setStorageError(null);
+        }
+      } catch (err) {
+        console.error('Storage check error:', err);
+        setStorageError('Unable to connect to storage service.');
+      }
+    };
+
+    checkBucket();
+  }, []);
 
   const getFunctionCategories = (functionName: string) => {
     if (!assessmentData || !Array.isArray(assessmentData)) {
@@ -95,7 +117,14 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
 
   const uploadFiles = async (evidenceId: string) => {
     const evidenceItem = evidence.find(e => e.id === evidenceId);
-    if (!evidenceItem || !user) return;
+    if (!evidenceItem || !user) {
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: !user ? "You must be logged in to upload files." : "Evidence item not found.",
+      });
+      return;
+    }
     
     setUploadingFor(evidenceId);
     
@@ -111,7 +140,10 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
             upsert: true
           });
           
-        if (error) throw error;
+        if (error) {
+          console.error('File upload error:', error);
+          throw error;
+        }
         
         uploadedPaths.push({
           path: filePath,
@@ -136,17 +168,17 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
         title: "Files uploaded successfully",
         description: `Uploaded ${evidenceItem.files.length} files for ${evidenceItem.category}`,
       });
-    } catch (error) {
+      
+      onSave(evidence);
+    } catch (error: any) {
       console.error('Error uploading file:', error);
       toast({
         variant: "destructive",
         title: "Upload failed",
-        description: "There was an error uploading your files. Please try again.",
+        description: error.message || "There was an error uploading your files. Please try again.",
       });
     } finally {
       setUploadingFor(null);
-      
-      onSave(evidence);
     }
   };
 
@@ -160,6 +192,13 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {storageError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{storageError}</AlertDescription>
+            </Alert>
+          )}
+          
           <Tabs value={activeFunction} onValueChange={setActiveFunction}>
             <TabsList className="grid grid-cols-5 mb-4">
               <TabsTrigger value="Identify">Identify</TabsTrigger>
@@ -180,6 +219,7 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleAddEvidence(category.category)}
+                          disabled={!!storageError}
                         >
                           Add Evidence
                         </Button>
@@ -216,11 +256,12 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                                   multiple
                                   onChange={(e) => handleFileChange(item.id, e.target.files)}
                                   className="flex-1"
+                                  disabled={uploadingFor === item.id || !!storageError}
                                 />
                                 <Button
                                   variant="secondary"
                                   onClick={() => uploadFiles(item.id)}
-                                  disabled={item.files.length === 0 || uploadingFor === item.id}
+                                  disabled={item.files.length === 0 || uploadingFor === item.id || !!storageError}
                                 >
                                   {uploadingFor === item.id ? "Uploading..." : "Upload"}
                                 </Button>
