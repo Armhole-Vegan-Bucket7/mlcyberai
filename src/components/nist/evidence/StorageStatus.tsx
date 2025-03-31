@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertCircle, Check, HelpCircle } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { BUCKET_NAME } from './utils/storageUtils';
 
 interface StorageStatusProps {
   storageStatus: 'checking' | 'ready' | 'error';
@@ -24,9 +26,10 @@ const StorageStatus: React.FC<StorageStatusProps> = ({
       <h3 className="font-medium">Troubleshooting Steps</h3>
       <ol className="space-y-2 pl-5 list-decimal">
         <li>Verify that you're logged in with a valid authenticated account.</li>
-        <li>Check if the storage bucket "Trust_Evidence_Uploads" exists in your Supabase project.</li>
-        <li>If the error persists, ask your administrator to check Supabase storage policies.</li>
-        <li>For developers: Verify RLS policies are correctly configured for the 'Trust_Evidence_Uploads' bucket.</li>
+        <li>Check if the storage bucket "{BUCKET_NAME}" exists in your Supabase project.</li>
+        <li>If the bucket doesn't exist, it needs to be created in your Supabase project.</li>
+        <li>If the error persists, check Supabase storage policies for the "{BUCKET_NAME}" bucket.</li>
+        <li>For developers: Verify RLS policies are correctly configured for the '{BUCKET_NAME}' bucket.</li>
       </ol>
       <div className="pt-4 border-t border-gray-700">
         <p className="text-sm text-gray-400">Error details: {storageError}</p>
@@ -102,7 +105,7 @@ const StorageStatus: React.FC<StorageStatusProps> = ({
         <Check className="h-4 w-4 text-green-500" />
         <AlertTitle>Storage Ready</AlertTitle>
         <AlertDescription>
-          Storage bucket is properly configured and ready for evidence uploads.
+          Storage bucket "{BUCKET_NAME}" is properly configured and ready for evidence uploads.
         </AlertDescription>
       </Alert>
     );
