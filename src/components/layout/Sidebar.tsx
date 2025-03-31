@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -22,7 +21,8 @@ import {
   Link as LinkIcon,
   Sparkles,
   ChevronsUp,
-  ChevronsDown
+  ChevronsDown,
+  FileCheck
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
@@ -104,7 +104,6 @@ const SidebarItem = ({ icon, text, to, active, superscriptText }: SidebarItemPro
 const SidebarSection = ({ title, children, defaultOpen = true, isForceOpen, setIsOpen }: SidebarSectionProps) => {
   const [isOpenState, setIsOpenState] = useState(defaultOpen);
   
-  // Use the forced state or the local state
   const open = isForceOpen !== undefined ? isForceOpen : isOpenState;
   
   const handleOpenChange = (newState: boolean) => {
@@ -140,7 +139,6 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const isMobile = useIsMobile();
   const [expandAll, setExpandAll] = useState(false);
 
-  // State for each section
   const [isMainOpen, setIsMainOpen] = useState(true);
   const [isSecurityOpen, setIsSecurityOpen] = useState(false);
   const [isLightStackOpen, setIsLightStackOpen] = useState(false);
@@ -192,6 +190,12 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       text: "Compliance",
       to: "/governance/compliance",
       superscriptText: "mini"
+    },
+    {
+      icon: <FileCheck size={20} className="text-cyber-purple" />,
+      text: "NIST Assessment",
+      to: "/governance/compliance/nist-assessment",
+      superscriptText: "new"
     },
     {
       icon: <Award size={20} className="text-cyber-yellow" />,

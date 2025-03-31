@@ -21,6 +21,7 @@ import Connectors from "./pages/system/Connectors";
 
 // Import LightStack (formerly governance) pages
 import Compliance from "./pages/governance/Compliance";
+import NistAssessment from "./pages/governance/NistAssessment";
 import ThreatInformedDefense from "./pages/governance/MaturityBenchmark";
 import BreachBoard from "./pages/governance/BreachBoard";
 import AnalystMini from "./pages/governance/CustomerQBR"; // Component renamed but file path stays the same
@@ -56,6 +57,7 @@ const App = () => (
                 
                 {/* LightStack Routes (formerly Governance) */}
                 <Route path="/governance/compliance" element={<ProtectedRoute><Compliance /></ProtectedRoute>} />
+                <Route path="/governance/compliance/nist-assessment" element={<ProtectedRoute><NistAssessment /></ProtectedRoute>} />
                 <Route path="/governance/maturity-benchmark" element={<ProtectedRoute><ThreatInformedDefense /></ProtectedRoute>} />
                 <Route path="/governance/breach-board" element={<ProtectedRoute><BreachBoard /></ProtectedRoute>} />
                 <Route path="/governance/customer-qbr" element={<ProtectedRoute><AnalystMini /></ProtectedRoute>} />
