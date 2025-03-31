@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export const BUCKET_NAME = 'Trust_Evidence_Uploads';
+export const BUCKET_NAME = 'truste';
 
 export const checkBucketExists = async (userId: string | undefined): Promise<{
   bucketExists: boolean;
