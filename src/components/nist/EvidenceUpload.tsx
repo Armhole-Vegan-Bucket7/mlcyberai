@@ -7,10 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { Upload, X, FileText, AlertCircle } from 'lucide-react';
+import { Upload, X, FileText, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface EvidenceUploadProps {
   assessmentData: any;
@@ -33,26 +33,31 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const [isCheckingStorage, setIsCheckingStorage] = useState(true);
 
   // Check if the trust_evidence bucket exists on component mount
   useEffect(() => {
-    const checkBucket = async () => {
-      try {
-        const { data, error } = await supabase.storage.getBucket('trust_evidence');
-        if (error) {
-          console.error('Storage bucket check error:', error);
-          setStorageError('Storage configuration issue. Please contact support.');
-        } else {
-          setStorageError(null);
-        }
-      } catch (err) {
-        console.error('Storage check error:', err);
-        setStorageError('Unable to connect to storage service.');
-      }
-    };
-
-    checkBucket();
+    checkStorageBucket();
   }, []);
+
+  const checkStorageBucket = async () => {
+    setIsCheckingStorage(true);
+    try {
+      const { data, error } = await supabase.storage.getBucket('trust_evidence');
+      if (error) {
+        console.error('Storage bucket check error:', error);
+        setStorageError('Storage configuration issue: ' + error.message);
+      } else {
+        console.log('Storage bucket found:', data);
+        setStorageError(null);
+      }
+    } catch (err) {
+      console.error('Storage check error:', err);
+      setStorageError('Unable to connect to storage service.');
+    } finally {
+      setIsCheckingStorage(false);
+    }
+  };
 
   const getFunctionCategories = (functionName: string) => {
     if (!assessmentData || !Array.isArray(assessmentData)) {
@@ -145,6 +150,7 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
           throw error;
         }
         
+        console.log('Upload successful:', data);
         uploadedPaths.push({
           path: filePath,
           name: file.name
@@ -195,7 +201,31 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
           {storageError && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{storageError}</AlertDescription>
+              <AlertTitle>Storage Error</AlertTitle>
+              <AlertDescription>
+                {storageError}
+                <div className="mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={checkStorageBucket}
+                    disabled={isCheckingStorage}
+                    className="mt-2"
+                  >
+                    {isCheckingStorage ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Checking...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Check Again
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </AlertDescription>
             </Alert>
           )}
           
@@ -219,7 +249,7 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleAddEvidence(category.category)}
-                          disabled={!!storageError}
+                          disabled={!!storageError || isCheckingStorage}
                         >
                           Add Evidence
                         </Button>
@@ -256,14 +286,24 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                                   multiple
                                   onChange={(e) => handleFileChange(item.id, e.target.files)}
                                   className="flex-1"
-                                  disabled={uploadingFor === item.id || !!storageError}
+                                  disabled={uploadingFor === item.id || !!storageError || isCheckingStorage}
                                 />
                                 <Button
                                   variant="secondary"
                                   onClick={() => uploadFiles(item.id)}
-                                  disabled={item.files.length === 0 || uploadingFor === item.id || !!storageError}
+                                  disabled={item.files.length === 0 || uploadingFor === item.id || !!storageError || isCheckingStorage}
                                 >
-                                  {uploadingFor === item.id ? "Uploading..." : "Upload"}
+                                  {uploadingFor === item.id ? (
+                                    <>
+                                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                      Uploading...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="h-4 w-4 mr-2" />
+                                      Upload
+                                    </>
+                                  )}
                                 </Button>
                               </div>
                               
