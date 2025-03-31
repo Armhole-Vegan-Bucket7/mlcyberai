@@ -6,12 +6,24 @@ export const BUCKET_NAME = 'truste';
 export const checkBucketExists = async (userId: string | undefined): Promise<{
   bucketExists: boolean;
   error: string | null;
+  errorDetails?: {
+    code?: number | string;
+    message: string;
+    timestamp: string;
+    context?: string;
+    userId?: string;
+  } | null;
 }> => {
   try {
     if (!userId) {
       return {
         bucketExists: false,
-        error: 'User authentication required'
+        error: 'User authentication required',
+        errorDetails: {
+          message: 'User authentication required for storage access',
+          timestamp: new Date().toISOString(),
+          context: 'No authenticated user ID found'
+        }
       };
     }
 
@@ -21,24 +33,35 @@ export const checkBucketExists = async (userId: string | undefined): Promise<{
     if (bucketError) {
       console.error('Storage bucket check error:', bucketError);
       
+      const errorDetails = {
+        code: bucketError.status || bucketError.code,
+        message: bucketError.message,
+        timestamp: new Date().toISOString(),
+        context: `Attempted to access bucket "${BUCKET_NAME}"`,
+        userId: userId
+      };
+      
       // Improved error handling for different scenarios
       if (bucketError.message.includes('not found') || bucketError.message.includes('Bucket not found')) {
         return {
           bucketExists: false,
-          error: `Bucket "${BUCKET_NAME}" not found. Please ensure it exists in your Supabase project.`
+          error: `Bucket "${BUCKET_NAME}" not found. Please ensure it exists in your Supabase project.`,
+          errorDetails
         };
       }
       
       if (bucketError.message.includes('Authentication') || bucketError.message.includes('auth')) {
         return {
           bucketExists: false,
-          error: `Authentication error: ${bucketError.message}. Please sign in to access storage.`
+          error: `Authentication error: ${bucketError.message}. Please sign in to access storage.`,
+          errorDetails
         };
       }
       
       return {
         bucketExists: false,
-        error: `Storage configuration issue: ${bucketError.message}`
+        error: `Storage configuration issue: ${bucketError.message}`,
+        errorDetails
       };
     }
     
@@ -53,11 +76,20 @@ export const checkBucketExists = async (userId: string | undefined): Promise<{
       if (listError) {
         console.warn('Storage access check warning:', listError);
         
+        const errorDetails = {
+          code: listError.status || listError.code,
+          message: listError.message,
+          timestamp: new Date().toISOString(),
+          context: `Attempted to list files in bucket "${BUCKET_NAME}" for user "${userId}"`,
+          userId: userId
+        };
+        
         // If this is a permissions issue, return a more specific error
         if (listError.message.includes('permission')) {
           return {
             bucketExists: true,
-            error: 'Storage bucket exists but you lack permission to access it. Make sure you are signed in.'
+            error: 'Storage bucket exists but you lack permission to access it. Make sure you are signed in.',
+            errorDetails
           };
         }
         
@@ -88,9 +120,19 @@ export const checkBucketExists = async (userId: string | undefined): Promise<{
     }
   } catch (err: any) {
     console.error('Storage check error:', err);
+    
+    const errorDetails = {
+      code: err.status || err.code,
+      message: err.message || 'Unknown error',
+      timestamp: new Date().toISOString(),
+      context: `General storage service connection attempt`,
+      userId: userId
+    };
+    
     return {
       bucketExists: false,
-      error: `Unable to connect to storage service: ${err.message || 'Unknown error'}`
+      error: `Unable to connect to storage service: ${err.message || 'Unknown error'}`,
+      errorDetails
     };
   }
 };

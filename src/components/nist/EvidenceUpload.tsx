@@ -17,6 +17,7 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
     isCheckingStorage,
     bucketExists,
     storageStatus,
+    errorDetails,
     checkStorageBucket,
     handleAddEvidence,
     handleRemoveEvidence,
@@ -50,6 +51,7 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
             isCheckingStorage={isCheckingStorage}
             storageError={storageError}
             bucketExists={bucketExists}
+            errorDetails={errorDetails}
             checkStorageBucket={checkStorageBucket}
           />
           

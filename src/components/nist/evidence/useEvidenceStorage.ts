@@ -19,6 +19,7 @@ export const useEvidenceStorage = (onSave: (data: any) => void) => {
     isCheckingStorage,
     bucketExists,
     storageStatus,
+    errorDetails,
     checkStorageBucket
   } = useStorageStatus();
   
@@ -52,6 +53,7 @@ export const useEvidenceStorage = (onSave: (data: any) => void) => {
     isCheckingStorage,
     bucketExists,
     storageStatus,
+    errorDetails,
     checkStorageBucket,
     handleAddEvidence,
     handleRemoveEvidence,

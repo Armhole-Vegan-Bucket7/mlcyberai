@@ -9,6 +9,7 @@ export const useStorageStatus = () => {
   const [isCheckingStorage, setIsCheckingStorage] = useState(true);
   const [bucketExists, setBucketExists] = useState(false);
   const [storageStatus, setStorageStatus] = useState<'checking' | 'ready' | 'error'>('checking');
+  const [errorDetails, setErrorDetails] = useState<any>(null);
 
   useEffect(() => {
     checkStorageBucket();
@@ -22,22 +23,29 @@ export const useStorageStatus = () => {
       setStorageError("User authentication required for storage access");
       setBucketExists(false);
       setStorageStatus('error');
+      setErrorDetails({
+        message: "User authentication required for storage access",
+        timestamp: new Date().toISOString(),
+        context: "No authenticated user"
+      });
       setIsCheckingStorage(false);
       return;
     }
     
     try {
-      const { bucketExists: exists, error } = await checkBucketExists(user.id);
+      const { bucketExists: exists, error, errorDetails: details } = await checkBucketExists(user.id);
       
       if (error) {
         console.error('Storage check failed:', error);
         setStorageError(error);
         setBucketExists(false);
         setStorageStatus('error');
+        setErrorDetails(details);
       } else {
         setStorageError(null);
         setBucketExists(exists);
         setStorageStatus('ready');
+        setErrorDetails(null);
         console.log(`Storage bucket "${BUCKET_NAME}" ready for use`);
       }
     } catch (err: any) {
@@ -45,6 +53,11 @@ export const useStorageStatus = () => {
       setStorageError(`Storage service error: ${err.message || 'Unknown error'}`);
       setBucketExists(false);
       setStorageStatus('error');
+      setErrorDetails({
+        message: err.message || 'Unknown error',
+        timestamp: new Date().toISOString(),
+        context: "Unexpected exception during storage check"
+      });
     } finally {
       setIsCheckingStorage(false);
     }
@@ -55,6 +68,7 @@ export const useStorageStatus = () => {
     isCheckingStorage,
     bucketExists,
     storageStatus,
+    errorDetails,
     checkStorageBucket
   };
 };
