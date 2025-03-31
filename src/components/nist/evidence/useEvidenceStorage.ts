@@ -16,7 +16,10 @@ export const useEvidenceStorage = (onSave: (data: any) => void) => {
   const [bucketExists, setBucketExists] = useState(false);
   const [storageStatus, setStorageStatus] = useState<'checking' | 'ready' | 'error'>('checking');
 
-  // Check if the trust_evidence bucket exists on component mount
+  // The correct bucket name from Supabase
+  const BUCKET_NAME = 'trust evidence'; // Changed from 'trust_evidence' to 'trust evidence'
+
+  // Check if the storage bucket exists on component mount
   useEffect(() => {
     checkStorageBucket();
   }, []);
@@ -27,7 +30,7 @@ export const useEvidenceStorage = (onSave: (data: any) => void) => {
     
     try {
       // First check if the bucket exists
-      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('trust_evidence');
+      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket(BUCKET_NAME);
       
       if (bucketError) {
         console.error('Storage bucket check error:', bucketError);
@@ -42,7 +45,7 @@ export const useEvidenceStorage = (onSave: (data: any) => void) => {
         
         // Now check if we can list files to verify policies
         const { data: listData, error: listError } = await supabase.storage
-          .from('trust_evidence')
+          .from(BUCKET_NAME)
           .list(user?.id || 'test-folder');
           
         if (listError) {
@@ -140,7 +143,7 @@ export const useEvidenceStorage = (onSave: (data: any) => void) => {
       for (const file of evidenceItem.files) {
         const filePath = `${user.id}/${evidenceItem.category}/${file.name}`;
         const { error, data } = await supabase.storage
-          .from('trust_evidence')
+          .from(BUCKET_NAME)
           .upload(filePath, file, {
             cacheControl: '3600',
             upsert: true

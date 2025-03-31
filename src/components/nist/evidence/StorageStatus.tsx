@@ -25,9 +25,9 @@ const StorageStatus: React.FC<StorageStatusProps> = ({
       <h3 className="font-medium">Troubleshooting Steps</h3>
       <ol className="space-y-2 pl-5 list-decimal">
         <li>Verify that you're logged in with a valid authenticated account.</li>
-        <li>The storage bucket has been created, but may require policy configuration.</li>
+        <li>Check if the storage bucket "trust evidence" exists in your Supabase project.</li>
         <li>If the error persists, ask your administrator to check Supabase storage policies.</li>
-        <li>For developers: Verify RLS policies are correctly configured for the 'trust_evidence' bucket.</li>
+        <li>For developers: Verify RLS policies are correctly configured for the 'trust evidence' bucket.</li>
       </ol>
       <div className="pt-4 border-t border-gray-700">
         <p className="text-sm text-gray-400">Error details: {storageError}</p>
