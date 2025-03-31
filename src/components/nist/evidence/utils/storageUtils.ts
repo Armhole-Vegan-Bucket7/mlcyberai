@@ -81,10 +81,36 @@ export const checkBucketExists = async (userId: string | undefined): Promise<{
 
 export const uploadFile = async (userId: string, categoryName: string, file: File) => {
   const filePath = `${userId}/${categoryName}/${file.name}`;
-  return supabase.storage
+  
+  // Log the upload attempt for debugging
+  console.log(`Attempting to upload file to ${BUCKET_NAME}:`, {
+    filePath,
+    userId,
+    fileSize: file.size,
+    fileType: file.type
+  });
+  
+  const result = await supabase.storage
     .from(BUCKET_NAME)
     .upload(filePath, file, {
       cacheControl: '3600',
       upsert: true
     });
+    
+  if (result.error) {
+    console.error('File upload error:', result.error);
+  } else {
+    console.log('File uploaded successfully:', result.data);
+  }
+    
+  return result;
+};
+
+// Add a utility function to get a public URL for an uploaded file
+export const getFileUrl = (filePath: string) => {
+  const { data } = supabase.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(filePath);
+    
+  return data.publicUrl;
 };

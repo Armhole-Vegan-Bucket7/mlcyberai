@@ -2,9 +2,10 @@
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, AlertCircle, Check, HelpCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, Check, HelpCircle, ShieldCheck } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { BUCKET_NAME } from './utils/storageUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StorageStatusProps {
   storageStatus: 'checking' | 'ready' | 'error';
@@ -21,6 +22,8 @@ const StorageStatus: React.FC<StorageStatusProps> = ({
   bucketExists,
   checkStorageBucket
 }) => {
+  const { user } = useAuth();
+  
   const getTroubleshootingSteps = () => (
     <div className="space-y-4 mt-4">
       <h3 className="font-medium">Troubleshooting Steps</h3>
@@ -36,6 +39,18 @@ const StorageStatus: React.FC<StorageStatusProps> = ({
       </div>
     </div>
   );
+
+  if (!user) {
+    return (
+      <Alert className="mb-4 bg-amber-900/20 border-amber-500/30">
+        <AlertCircle className="h-4 w-4 text-amber-500" />
+        <AlertTitle>Authentication Required</AlertTitle>
+        <AlertDescription>
+          You must be logged in to upload evidence files. Please sign in to continue.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (isCheckingStorage) {
     return (
@@ -103,9 +118,15 @@ const StorageStatus: React.FC<StorageStatusProps> = ({
     return (
       <Alert variant="default" className="mb-4 bg-green-900/20 border-green-500/30">
         <Check className="h-4 w-4 text-green-500" />
-        <AlertTitle>Storage Ready</AlertTitle>
+        <AlertTitle className="flex items-center">
+          <span>Storage Ready</span>
+          <ShieldCheck className="h-4 w-4 ml-2 text-green-500" />
+        </AlertTitle>
         <AlertDescription>
-          Storage bucket "{BUCKET_NAME}" is properly configured and ready for evidence uploads.
+          <div>Storage bucket "{BUCKET_NAME}" is properly configured and ready for secure uploads.</div>
+          <div className="text-xs mt-1 text-green-500/80">
+            Your files will be stored securely with authenticated access only.
+          </div>
         </AlertDescription>
       </Alert>
     );

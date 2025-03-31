@@ -20,7 +20,18 @@ export const useFileUpload = (
       toast({
         variant: "destructive",
         title: "Upload failed",
-        description: !user ? "You must be logged in to upload files." : "Evidence item not found.",
+        description: !user 
+          ? "You must be logged in to upload files. Please sign in and try again." 
+          : "Evidence item not found.",
+      });
+      return;
+    }
+    
+    if (evidenceItem.files.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No files to upload",
+        description: "Please select at least one file to upload.",
       });
       return;
     }
@@ -29,41 +40,72 @@ export const useFileUpload = (
     
     try {
       const uploadedPaths = [];
+      const failedUploads = [];
       
       for (const file of evidenceItem.files) {
+        console.log(`Uploading file ${file.name} for category ${evidenceItem.category}`);
+        
         const { error, data } = await uploadFile(user.id, evidenceItem.category, file);
           
         if (error) {
           console.error('File upload error:', error);
-          throw error;
+          failedUploads.push({
+            name: file.name,
+            error: error.message
+          });
+        } else {
+          console.log('Upload successful:', data);
+          uploadedPaths.push({
+            path: `${user.id}/${evidenceItem.category}/${file.name}`,
+            name: file.name
+          });
         }
-        
-        console.log('Upload successful:', data);
-        uploadedPaths.push({
-          path: `${user.id}/${evidenceItem.category}/${file.name}`,
-          name: file.name
+      }
+      
+      // Update the evidence with successfully uploaded files
+      if (uploadedPaths.length > 0) {
+        setEvidence(prev => 
+          prev.map(e => {
+            if (e.id === evidenceId) {
+              return {
+                ...e,
+                uploadedFiles: [...e.uploadedFiles, ...uploadedPaths],
+                files: failedUploads.length > 0 
+                  ? e.files.filter(file => 
+                      failedUploads.some(failed => failed.name === file.name)
+                    ) 
+                  : [] // Clear all files if all uploads were successful
+              };
+            }
+            return e;
+          })
+        );
+      }
+      
+      // Show appropriate toast message based on results
+      if (failedUploads.length === 0) {
+        toast({
+          title: "Files uploaded successfully",
+          description: `Uploaded ${evidenceItem.files.length} files for ${evidenceItem.category}`,
+        });
+      } else if (uploadedPaths.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Upload failed",
+          description: `Failed to upload ${failedUploads.length} files. Please try again.`,
+        });
+      } else {
+        toast({
+          variant: "warning",
+          title: "Partial upload success",
+          description: `Uploaded ${uploadedPaths.length} files, but ${failedUploads.length} failed.`,
         });
       }
       
-      setEvidence(prev => 
-        prev.map(e => {
-          if (e.id === evidenceId) {
-            return {
-              ...e,
-              uploadedFiles: [...e.uploadedFiles, ...uploadedPaths],
-              files: [] // Clear local files after upload
-            };
-          }
-          return e;
-        })
-      );
-      
-      toast({
-        title: "Files uploaded successfully",
-        description: `Uploaded ${evidenceItem.files.length} files for ${evidenceItem.category}`,
-      });
-      
-      onSave(evidence);
+      // Save evidence data if any files were uploaded successfully
+      if (uploadedPaths.length > 0) {
+        onSave(evidence);
+      }
     } catch (error: any) {
       console.error('Error uploading file:', error);
       toast({
