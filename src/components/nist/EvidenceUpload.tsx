@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Upload, X, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EvidenceUploadProps {
   assessmentData: any;
@@ -27,13 +26,11 @@ interface Evidence {
 const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const supabase = createClient();
   
   const [activeFunction, setActiveFunction] = useState('Identify');
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
 
-  // Flatten categories from all functions
   const getFunctionCategories = (functionName: string) => {
     if (!assessmentData || !Array.isArray(assessmentData)) {
       return [];
@@ -121,7 +118,6 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
         });
       }
       
-      // Update evidence with uploaded files
       setEvidence(prev => 
         prev.map(e => {
           if (e.id === evidenceId) {
@@ -149,7 +145,6 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
     } finally {
       setUploadingFor(null);
       
-      // Save evidence to parent component
       onSave(evidence);
     }
   };
@@ -230,7 +225,6 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                                 </Button>
                               </div>
                               
-                              {/* Display files to be uploaded */}
                               {item.files.length > 0 && (
                                 <div className="mb-4">
                                   <Label className="mb-2 block">Files to upload:</Label>
@@ -255,7 +249,6 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                                 </div>
                               )}
                               
-                              {/* Display uploaded files */}
                               {item.uploadedFiles.length > 0 && (
                                 <div>
                                   <Label className="mb-2 block">Uploaded files:</Label>
