@@ -17,7 +17,7 @@ export const useEvidenceStorage = (onSave: (data: any) => void) => {
   const [storageStatus, setStorageStatus] = useState<'checking' | 'ready' | 'error'>('checking');
 
   // The correct bucket name from Supabase
-  const BUCKET_NAME = 'Trust Evidence Uploads'; // Changed from 'trust evidence' to 'Trust Evidence Uploads'
+  const BUCKET_NAME = 'Trust_Evidence_Uploads';
 
   // Check if the storage bucket exists on component mount
   useEffect(() => {
