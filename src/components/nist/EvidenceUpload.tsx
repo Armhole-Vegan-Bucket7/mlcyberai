@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { Upload, X, FileText, AlertCircle, RefreshCw, Check } from 'lucide-react';
+import { Upload, X, FileText, AlertCircle, RefreshCw, Check, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface EvidenceUploadProps {
   assessmentData: any;
@@ -36,6 +37,7 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
   const [storageError, setStorageError] = useState<string | null>(null);
   const [isCheckingStorage, setIsCheckingStorage] = useState(true);
   const [bucketExists, setBucketExists] = useState(false);
+  const [storageStatus, setStorageStatus] = useState<'checking' | 'ready' | 'error'>('checking');
 
   // Check if the trust_evidence bucket exists on component mount
   useEffect(() => {
@@ -44,21 +46,38 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
 
   const checkStorageBucket = async () => {
     setIsCheckingStorage(true);
+    setStorageStatus('checking');
+    
     try {
-      const { data, error } = await supabase.storage.getBucket('trust_evidence');
-      if (error) {
-        console.error('Storage bucket check error:', error);
-        setStorageError('Storage configuration issue: ' + error.message);
+      // First check if the bucket exists
+      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('trust_evidence');
+      
+      if (bucketError) {
+        console.error('Storage bucket check error:', bucketError);
+        setStorageError(`Storage configuration issue: ${bucketError.message}`);
         setBucketExists(false);
+        setStorageStatus('error');
       } else {
-        console.log('Storage bucket found:', data);
+        console.log('Storage bucket found:', bucketData);
         setStorageError(null);
         setBucketExists(true);
+        setStorageStatus('ready');
+        
+        // Now check if we can list files to verify policies
+        const { data: listData, error: listError } = await supabase.storage
+          .from('trust_evidence')
+          .list(user?.id || 'test-folder');
+          
+        if (listError) {
+          console.warn('Storage access check warning:', listError);
+          // This is just a check, not a critical error if folder doesn't exist yet
+        }
       }
     } catch (err) {
       console.error('Storage check error:', err);
       setStorageError('Unable to connect to storage service.');
       setBucketExists(false);
+      setStorageStatus('error');
     } finally {
       setIsCheckingStorage(false);
     }
@@ -206,16 +225,94 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
     <div className="space-y-4 mt-4">
       <h3 className="font-medium">Troubleshooting Steps</h3>
       <ol className="space-y-2 pl-5 list-decimal">
-        <li>Check that the Supabase project is properly configured with the required storage bucket.</li>
-        <li>Verify that your authentication setup is working correctly.</li>
-        <li>Ensure that appropriate storage policies are in place to allow file uploads.</li>
-        <li>Contact your administrator if the issue persists.</li>
+        <li>Verify that you're logged in with a valid authenticated account.</li>
+        <li>The storage bucket has been created, but may require policy configuration.</li>
+        <li>If the error persists, ask your administrator to check Supabase storage policies.</li>
+        <li>For developers: Verify RLS policies are correctly configured for the 'trust_evidence' bucket.</li>
       </ol>
       <div className="pt-4 border-t border-gray-700">
         <p className="text-sm text-gray-400">Error details: {storageError}</p>
       </div>
     </div>
   );
+
+  const renderStorageStatus = () => {
+    if (isCheckingStorage) {
+      return (
+        <Alert className="mb-4 bg-amber-900/20 border-amber-500/30">
+          <RefreshCw className="h-4 w-4 text-amber-500 animate-spin" />
+          <AlertTitle>Checking Storage</AlertTitle>
+          <AlertDescription>
+            Verifying connection to secure evidence storage...
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    
+    if (storageError) {
+      return (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Storage Error</AlertTitle>
+          <AlertDescription>
+            {storageError}
+            <div className="mt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={checkStorageBucket}
+                disabled={isCheckingStorage}
+                className="mt-2"
+              >
+                {isCheckingStorage ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Checking...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Check Again
+                  </>
+                )}
+              </Button>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm" className="ml-2">
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    Need Help?
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Storage Configuration Help</SheetTitle>
+                    <SheetDescription>
+                      Resolving storage bucket configuration issues
+                    </SheetDescription>
+                  </SheetHeader>
+                  {getTroubleshootingSteps()}
+                </SheetContent>
+              </Sheet>
+            </div>
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    if (bucketExists) {
+      return (
+        <Alert variant="default" className="mb-4 bg-green-900/20 border-green-500/30">
+          <Check className="h-4 w-4 text-green-500" />
+          <AlertTitle>Storage Ready</AlertTitle>
+          <AlertDescription>
+            Storage bucket is properly configured and ready for evidence uploads.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    
+    return null;
+  };
 
   return (
     <div className="space-y-6">
@@ -227,62 +324,7 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {storageError && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Storage Error</AlertTitle>
-              <AlertDescription>
-                {storageError}
-                <div className="mt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={checkStorageBucket}
-                    disabled={isCheckingStorage}
-                    className="mt-2"
-                  >
-                    {isCheckingStorage ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Checking...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Check Again
-                      </>
-                    )}
-                  </Button>
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button variant="ghost" size="sm" className="ml-2">
-                        Need Help?
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent>
-                      <SheetHeader>
-                        <SheetTitle>Storage Configuration Help</SheetTitle>
-                        <SheetDescription>
-                          Resolving storage bucket configuration issues
-                        </SheetDescription>
-                      </SheetHeader>
-                      {getTroubleshootingSteps()}
-                    </SheetContent>
-                  </Sheet>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {bucketExists && (
-            <Alert variant="default" className="mb-4 bg-green-900/20 border-green-500/30">
-              <Check className="h-4 w-4 text-green-500" />
-              <AlertTitle>Storage Ready</AlertTitle>
-              <AlertDescription>
-                Storage bucket is properly configured and ready for evidence uploads.
-              </AlertDescription>
-            </Alert>
-          )}
+          {renderStorageStatus()}
           
           <Tabs value={activeFunction} onValueChange={setActiveFunction}>
             <TabsList className="grid grid-cols-5 mb-4">
@@ -300,14 +342,27 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                     <div key={category.category} className="border-t border-cyber-blue/10 pt-4">
                       <div className="flex justify-between items-center mb-2">
                         <h4 className="font-medium">{category.category}</h4>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleAddEvidence(category.category)}
-                          disabled={!!storageError || isCheckingStorage || !bucketExists}
-                        >
-                          Add Evidence
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleAddEvidence(category.category)}
+                                  disabled={storageStatus !== 'ready'}
+                                >
+                                  Add Evidence
+                                </Button>
+                              </div>
+                            </TooltipTrigger>
+                            {storageStatus !== 'ready' && (
+                              <TooltipContent>
+                                <p>Evidence upload requires storage to be configured properly</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                       
                       {evidence
@@ -341,12 +396,12 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                                   multiple
                                   onChange={(e) => handleFileChange(item.id, e.target.files)}
                                   className="flex-1"
-                                  disabled={uploadingFor === item.id || !bucketExists}
+                                  disabled={uploadingFor === item.id || storageStatus !== 'ready'}
                                 />
                                 <Button
                                   variant="secondary"
                                   onClick={() => uploadFiles(item.id)}
-                                  disabled={item.files.length === 0 || uploadingFor === item.id || !bucketExists}
+                                  disabled={item.files.length === 0 || uploadingFor === item.id || storageStatus !== 'ready'}
                                 >
                                   {uploadingFor === item.id ? (
                                     <>
