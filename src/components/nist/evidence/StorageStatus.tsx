@@ -2,7 +2,7 @@
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, AlertCircle, Check, HelpCircle, ShieldCheck } from 'lucide-react';
+import { RefreshCw, AlertCircle, Check, HelpCircle, ShieldCheck, LogIn } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { BUCKET_NAME } from './utils/storageUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +22,7 @@ const StorageStatus: React.FC<StorageStatusProps> = ({
   bucketExists,
   checkStorageBucket
 }) => {
-  const { user } = useAuth();
+  const { user, signIn } = useAuth();
   
   const getTroubleshootingSteps = () => (
     <div className="space-y-4 mt-4">
@@ -30,7 +30,7 @@ const StorageStatus: React.FC<StorageStatusProps> = ({
       <ol className="space-y-2 pl-5 list-decimal">
         <li>Verify that you're logged in with a valid authenticated account.</li>
         <li>Check if the storage bucket "{BUCKET_NAME}" exists in your Supabase project.</li>
-        <li>If the bucket doesn't exist, it needs to be created in your Supabase project.</li>
+        <li>Ensure your account has the proper permissions to access the bucket.</li>
         <li>If the error persists, check Supabase storage policies for the "{BUCKET_NAME}" bucket.</li>
         <li>For developers: Verify RLS policies are correctly configured for the '{BUCKET_NAME}' bucket.</li>
       </ol>
@@ -46,7 +46,18 @@ const StorageStatus: React.FC<StorageStatusProps> = ({
         <AlertCircle className="h-4 w-4 text-amber-500" />
         <AlertTitle>Authentication Required</AlertTitle>
         <AlertDescription>
-          You must be logged in to upload evidence files. Please sign in to continue.
+          <div>You must be logged in to upload evidence files. Please sign in to continue.</div>
+          <div className="mt-2">
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = '/auth'}
+              className="bg-amber-900/30 border-amber-500/50 hover:bg-amber-800/50"
+            >
+              <LogIn className="h-4 w-4 mr-2" />
+              Sign In
+            </Button>
+          </div>
         </AlertDescription>
       </Alert>
     );

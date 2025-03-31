@@ -21,11 +21,18 @@ export const checkBucketExists = async (userId: string | undefined): Promise<{
     if (bucketError) {
       console.error('Storage bucket check error:', bucketError);
       
-      // Check if this is a "not found" error
+      // Improved error handling for different scenarios
       if (bucketError.message.includes('not found') || bucketError.message.includes('Bucket not found')) {
         return {
           bucketExists: false,
           error: `Bucket "${BUCKET_NAME}" not found. Please ensure it exists in your Supabase project.`
+        };
+      }
+      
+      if (bucketError.message.includes('Authentication') || bucketError.message.includes('auth')) {
+        return {
+          bucketExists: false,
+          error: `Authentication error: ${bucketError.message}. Please sign in to access storage.`
         };
       }
       
@@ -50,7 +57,16 @@ export const checkBucketExists = async (userId: string | undefined): Promise<{
         if (listError.message.includes('permission')) {
           return {
             bucketExists: true,
-            error: 'Storage bucket exists but you lack permission to access it'
+            error: 'Storage bucket exists but you lack permission to access it. Make sure you are signed in.'
+          };
+        }
+        
+        // If this is a folder doesn't exist error, it's not critical
+        if (listError.message.includes('folder') || listError.message.includes('not found')) {
+          // This is normal for new users, no need to return an error
+          return {
+            bucketExists: true,
+            error: null
           };
         }
       }

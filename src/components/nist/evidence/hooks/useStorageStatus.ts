@@ -31,7 +31,7 @@ export const useStorageStatus = () => {
       
       if (error) {
         console.error('Storage check failed:', error);
-        setStorageError(`Storage configuration issue: ${error}`);
+        setStorageError(error);
         setBucketExists(false);
         setStorageStatus('error');
       } else {
