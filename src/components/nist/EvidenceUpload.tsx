@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { Upload, X, FileText, AlertCircle, RefreshCw } from 'lucide-react';
+import { Upload, X, FileText, AlertCircle, RefreshCw, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 interface EvidenceUploadProps {
   assessmentData: any;
@@ -34,6 +35,7 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [isCheckingStorage, setIsCheckingStorage] = useState(true);
+  const [bucketExists, setBucketExists] = useState(false);
 
   // Check if the trust_evidence bucket exists on component mount
   useEffect(() => {
@@ -47,13 +49,16 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
       if (error) {
         console.error('Storage bucket check error:', error);
         setStorageError('Storage configuration issue: ' + error.message);
+        setBucketExists(false);
       } else {
         console.log('Storage bucket found:', data);
         setStorageError(null);
+        setBucketExists(true);
       }
     } catch (err) {
       console.error('Storage check error:', err);
       setStorageError('Unable to connect to storage service.');
+      setBucketExists(false);
     } finally {
       setIsCheckingStorage(false);
     }
@@ -130,6 +135,15 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
       });
       return;
     }
+
+    if (!bucketExists) {
+      toast({
+        variant: "destructive",
+        title: "Storage not available",
+        description: "The storage bucket doesn't exist. Please contact your administrator.",
+      });
+      return;
+    }
     
     setUploadingFor(evidenceId);
     
@@ -188,6 +202,21 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
     }
   };
 
+  const getTroubleshootingSteps = () => (
+    <div className="space-y-4 mt-4">
+      <h3 className="font-medium">Troubleshooting Steps</h3>
+      <ol className="space-y-2 pl-5 list-decimal">
+        <li>Check that the Supabase project is properly configured with the required storage bucket.</li>
+        <li>Verify that your authentication setup is working correctly.</li>
+        <li>Ensure that appropriate storage policies are in place to allow file uploads.</li>
+        <li>Contact your administrator if the issue persists.</li>
+      </ol>
+      <div className="pt-4 border-t border-gray-700">
+        <p className="text-sm text-gray-400">Error details: {storageError}</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <Card className="border border-cyber-blue/10 bg-cyber-gray-900/50">
@@ -224,7 +253,33 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                       </>
                     )}
                   </Button>
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="ghost" size="sm" className="ml-2">
+                        Need Help?
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent>
+                      <SheetHeader>
+                        <SheetTitle>Storage Configuration Help</SheetTitle>
+                        <SheetDescription>
+                          Resolving storage bucket configuration issues
+                        </SheetDescription>
+                      </SheetHeader>
+                      {getTroubleshootingSteps()}
+                    </SheetContent>
+                  </Sheet>
                 </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {bucketExists && (
+            <Alert variant="default" className="mb-4 bg-green-900/20 border-green-500/30">
+              <Check className="h-4 w-4 text-green-500" />
+              <AlertTitle>Storage Ready</AlertTitle>
+              <AlertDescription>
+                Storage bucket is properly configured and ready for evidence uploads.
               </AlertDescription>
             </Alert>
           )}
@@ -249,7 +304,7 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleAddEvidence(category.category)}
-                          disabled={!!storageError || isCheckingStorage}
+                          disabled={!!storageError || isCheckingStorage || !bucketExists}
                         >
                           Add Evidence
                         </Button>
@@ -286,12 +341,12 @@ const EvidenceUpload: React.FC<EvidenceUploadProps> = ({ assessmentData, onSave 
                                   multiple
                                   onChange={(e) => handleFileChange(item.id, e.target.files)}
                                   className="flex-1"
-                                  disabled={uploadingFor === item.id || !!storageError || isCheckingStorage}
+                                  disabled={uploadingFor === item.id || !bucketExists}
                                 />
                                 <Button
                                   variant="secondary"
                                   onClick={() => uploadFiles(item.id)}
-                                  disabled={item.files.length === 0 || uploadingFor === item.id || !!storageError || isCheckingStorage}
+                                  disabled={item.files.length === 0 || uploadingFor === item.id || !bucketExists}
                                 >
                                   {uploadingFor === item.id ? (
                                     <>
