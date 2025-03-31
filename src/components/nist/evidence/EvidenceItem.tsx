@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { X, FileText, RefreshCw, Upload } from 'lucide-react';
 import { Evidence } from './types';
+import FilePreview from './FilePreview';
 
 interface EvidenceItemProps {
   item: Evidence;
@@ -84,20 +85,11 @@ const EvidenceItem: React.FC<EvidenceItemProps> = ({
             <Label className="mb-2 block">Files to upload:</Label>
             <div className="space-y-2">
               {item.files.map((file, index) => (
-                <div key={index} className="flex items-center justify-between bg-cyber-gray-700 p-2 rounded text-sm">
-                  <div className="flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-cyber-blue" />
-                    <span>{file.name}</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRemoveFile(item.id, index)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+                <FilePreview 
+                  key={index} 
+                  file={file} 
+                  onRemove={() => onRemoveFile(item.id, index)} 
+                />
               ))}
             </div>
           </div>
