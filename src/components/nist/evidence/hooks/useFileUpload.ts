@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadFile } from '../utils/storageUtils';
 import { Evidence } from '../types';
@@ -95,9 +95,10 @@ export const useFileUpload = (
           description: `Failed to upload ${failedUploads.length} files. Please try again.`,
         });
       } else {
+        // Changed "warning" to "default" here, but added a more cautionary title
         toast({
-          variant: "warning",
-          title: "Partial upload success",
+          variant: "default",
+          title: "Partial upload success - Warning",
           description: `Uploaded ${uploadedPaths.length} files, but ${failedUploads.length} failed.`,
         });
       }
