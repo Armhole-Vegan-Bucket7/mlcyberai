@@ -20,12 +20,15 @@ import {
   Globe,
   ChevronDown,
   Link as LinkIcon,
-  Sparkles
+  Sparkles,
+  ChevronsUp,
+  ChevronsDown
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -44,6 +47,8 @@ interface SidebarSectionProps {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  isForceOpen?: boolean;
+  setIsOpen: (open: boolean) => void;
 }
 
 const SidebarItem = ({ icon, text, to, active, superscriptText }: SidebarItemProps) => {
@@ -96,11 +101,19 @@ const SidebarItem = ({ icon, text, to, active, superscriptText }: SidebarItemPro
   );
 };
 
-const SidebarSection = ({ title, children, defaultOpen = true }: SidebarSectionProps) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+const SidebarSection = ({ title, children, defaultOpen = true, isForceOpen, setIsOpen }: SidebarSectionProps) => {
+  const [isOpenState, setIsOpenState] = useState(defaultOpen);
+  
+  // Use the forced state or the local state
+  const open = isForceOpen !== undefined ? isForceOpen : isOpenState;
+  
+  const handleOpenChange = (newState: boolean) => {
+    setIsOpenState(newState);
+    setIsOpen(newState);
+  };
   
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="transition-all duration-300">
+    <Collapsible open={open} onOpenChange={handleOpenChange} className="transition-all duration-300">
       <div className="px-4 mb-2">
         <CollapsibleTrigger className="flex w-full items-center justify-between text-xs uppercase text-cyber-gray-500 font-medium tracking-wider py-2 hover:text-cyber-blue transition-colors">
           <span>{title}</span>
@@ -108,7 +121,7 @@ const SidebarSection = ({ title, children, defaultOpen = true }: SidebarSectionP
             size={14} 
             className={cn(
               "transition-transform duration-300", 
-              isOpen ? "transform rotate-180" : ""
+              open ? "transform rotate-180" : ""
             )}
           />
         </CollapsibleTrigger>
@@ -125,6 +138,18 @@ const SidebarSection = ({ title, children, defaultOpen = true }: SidebarSectionP
 export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
+  const [expandAll, setExpandAll] = useState(false);
+
+  // State for each section
+  const [isMainOpen, setIsMainOpen] = useState(true);
+  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
+  const [isLightStackOpen, setIsLightStackOpen] = useState(false);
+  const [isSystemOpen, setIsSystemOpen] = useState(false);
+
+  const toggleExpandAll = () => {
+    const newExpandState = !expandAll;
+    setExpandAll(newExpandState);
+  };
 
   const closeSidebar = () => {
     setIsOpen(false);
@@ -234,10 +259,31 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             </div>
           </div>
         )}
+
+        <div className="mb-4 px-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full flex items-center justify-between text-xs uppercase text-cyber-gray-500 tracking-wider"
+            onClick={toggleExpandAll}
+          >
+            <span className="mr-2">{expandAll ? 'Collapse All' : 'Expand All'}</span>
+            {expandAll ? (
+              <ChevronsUp size={14} className="opacity-70" />
+            ) : (
+              <ChevronsDown size={14} className="opacity-70" />
+            )}
+          </Button>
+        </div>
         
         <ScrollArea className="flex-1">
           <div className="space-y-4 animate-slide-down pr-3">
-            <SidebarSection title="Main" defaultOpen={true}>
+            <SidebarSection 
+              title="Main" 
+              defaultOpen={true} 
+              isForceOpen={expandAll ? true : undefined} 
+              setIsOpen={setIsMainOpen}
+            >
               {mainRoutes.map((route) => (
                 <SidebarItem
                   key={route.to}
@@ -249,7 +295,12 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               ))}
             </SidebarSection>
             
-            <SidebarSection title="Security" defaultOpen={false}>
+            <SidebarSection 
+              title="Security" 
+              defaultOpen={false} 
+              isForceOpen={expandAll ? true : undefined} 
+              setIsOpen={setIsSecurityOpen}
+            >
               {securityRoutes.map((route) => (
                 <SidebarItem
                   key={route.to}
@@ -261,7 +312,12 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               ))}
             </SidebarSection>
             
-            <SidebarSection title="LightStack" defaultOpen={false}>
+            <SidebarSection 
+              title="LightStack" 
+              defaultOpen={false} 
+              isForceOpen={expandAll ? true : undefined} 
+              setIsOpen={setIsLightStackOpen}
+            >
               {governanceRoutes.map((route) => (
                 <SidebarItem
                   key={route.to}
@@ -274,7 +330,12 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               ))}
             </SidebarSection>
             
-            <SidebarSection title="System" defaultOpen={false}>
+            <SidebarSection 
+              title="System" 
+              defaultOpen={false} 
+              isForceOpen={expandAll ? true : undefined} 
+              setIsOpen={setIsSystemOpen}
+            >
               {systemRoutes.map((route) => (
                 <SidebarItem
                   key={route.to}
