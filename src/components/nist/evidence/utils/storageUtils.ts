@@ -7,7 +7,6 @@ export const checkBucketExists = async (userId: string | undefined): Promise<{
   bucketExists: boolean;
   error: string | null;
   errorDetails?: {
-    code?: number | string;
     message: string;
     timestamp: string;
     context?: string;
@@ -34,7 +33,6 @@ export const checkBucketExists = async (userId: string | undefined): Promise<{
       console.error('Storage bucket check error:', bucketError);
       
       const errorDetails = {
-        code: bucketError.status || bucketError.code,
         message: bucketError.message,
         timestamp: new Date().toISOString(),
         context: `Attempted to access bucket "${BUCKET_NAME}"`,
@@ -77,7 +75,6 @@ export const checkBucketExists = async (userId: string | undefined): Promise<{
         console.warn('Storage access check warning:', listError);
         
         const errorDetails = {
-          code: listError.status || listError.code,
           message: listError.message,
           timestamp: new Date().toISOString(),
           context: `Attempted to list files in bucket "${BUCKET_NAME}" for user "${userId}"`,
@@ -122,7 +119,6 @@ export const checkBucketExists = async (userId: string | undefined): Promise<{
     console.error('Storage check error:', err);
     
     const errorDetails = {
-      code: err.status || err.code,
       message: err.message || 'Unknown error',
       timestamp: new Date().toISOString(),
       context: `General storage service connection attempt`,
